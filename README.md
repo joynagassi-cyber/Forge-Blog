@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Forge-Blog
 
-## Getting Started
+Shared public content platform for **NainoForge** and **SCYForge**.
 
-First, run the development server:
+Built from `forge-blog-system-prompt.md`: editorial engine + reader-facing blog with neutral surfaces, violet accent only, locale-aware EN/FR, Supabase backend, provider-agnostic AI pipeline.
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Frontend | Next.js App Router, TypeScript, Tailwind CSS |
+| Editor (planned wiring) | BlockNote on Tiptap |
+| Diagrams | React Flow |
+| Backend | Supabase (Postgres, Auth, Storage, RLS, Edge Functions) |
+| Analytics | PostHog |
+| Deploy | Vercel + Supabase Cloud |
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+cd forge-blog
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Public blog: [http://localhost:3000](http://localhost:3000) (redirects to `/en` or `/fr`)
+- Admin: [http://localhost:3000/admin](http://localhost:3000/admin)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Demo content runs **without** Supabase. To persist:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a Supabase project
+2. Copy `.env.example` → `.env.local` and fill keys
+3. Apply migrations in `supabase/migrations/` (in order)
+4. Enable Google OAuth in Supabase Auth
 
-## Learn More
+## Build order (section 14.7)
 
-To learn more about Next.js, take a look at the following resources:
+1. Schema + RLS + auth
+2. Admin shell + BlockNote ↔ `articles.content`
+3. AI adapters + Edge Functions (human approval gate)
+4. Public blog + locale middleware
+5. Design system polish (violet shimmer, light/dark)
+6. SEO/AEO/GEO + hreflang + sitemap
+7. Diagrams, PostHog, performance dashboard
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm dev          # local server
+pnpm build        # production build
+pnpm test         # unit tests (blocks, locale, AI, pillars)
+pnpm lint
+```
 
-## Deploy on Vercel
+## Repo map
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/(public via [locale])  public blog
+app/admin                  editorial dashboard
+components/public          cards, TOC, block renderers
+components/shared          design-system primitives
+lib/ai                     provider adapters
+lib/blocks                 section 10 scaffold + validation
+lib/locale                 Accept-Language / cookie / geo resolution
+lib/pillars                pillar → product mapping
+supabase/migrations        schema + RLS + seeds
+supabase/functions         AI + sitemap edge scaffolds
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Non-negotiables
+
+- No invented stats or testimonials; mark unverified claims `[à vérifier]`
+- Violet only on titles, links, CTAs, active states, and bold body emphasis
+- Three separate AI calls (brief / draft / audit); never publish AI output without human review
+- Conversion paths come from `pillars.target_product`, not free-form AI choice

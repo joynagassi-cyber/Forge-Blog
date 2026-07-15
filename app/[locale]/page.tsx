@@ -1,0 +1,215 @@
+import { ArticleCard } from "@/components/public/ArticleCard";
+import { Button } from "@/components/shared/Button";
+import {
+  articlesByPillar,
+  getFeatured,
+  getArticles,
+} from "@/lib/content/demo-articles";
+import type { Locale } from "@/lib/locale/resolve";
+import { PILLARS } from "@/lib/pillars/mapping";
+import { format } from "date-fns";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+const copy = {
+  en: {
+    heroHeadline:
+      "Master what you learn. Make your SOC ready faster.",
+    heroSub:
+      "Deep writing on memory science and operational cyber from the teams building NainoForge and SCYForge.",
+    credibility:
+      "Grounded in real cognitive science and real SOC operations, not recycled listicles.",
+    readArticle: "Read the article",
+    min: "min read",
+    pillarsTitle: "Explore by pillar",
+    softBridgeTitle: "From reading to practice",
+    softBridgeBody:
+      "Articles here are designed to change how you learn or how you train a SOC, then point to the tool that makes that next step concrete.",
+    nainoCta: "Try NainoForge",
+    scyCta: "Request a SCYForge demo",
+    searchPlaceholder: "Search articles…",
+    searchLabel: "Search",
+    allArticles: "All articles",
+  },
+  fr: {
+    heroHeadline:
+      "Maîtrisez ce que vous apprenez. Accélérez la readiness SOC.",
+    heroSub:
+      "Écrits de fond sur la mémoire et le cyber opérationnel, par les équipes de NainoForge et SCYForge.",
+    credibility:
+      "Ancré dans les sciences cognitives et les opérations SOC réelles, pas dans des listicles recyclés.",
+    readArticle: "Lire l'article",
+    min: "min de lecture",
+    pillarsTitle: "Explorer par pilier",
+    softBridgeTitle: "De la lecture à la pratique",
+    softBridgeBody:
+      "Chaque article vise à changer votre façon d'apprendre ou de former un SOC, puis pointe vers l'outil qui rend la suite concrète.",
+    nainoCta: "Essayer NainoForge",
+    scyCta: "Demander une démo SCYForge",
+    searchPlaceholder: "Rechercher des articles…",
+    searchLabel: "Recherche",
+    allArticles: "Tous les articles",
+  },
+};
+
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: raw } = await params;
+  if (raw !== "en" && raw !== "fr") notFound();
+  const locale = raw as Locale;
+  const t = copy[locale];
+  const featured = getFeatured(locale);
+  const articles = getArticles(locale);
+
+  if (!featured) notFound();
+
+  return (
+    <div>
+      {/* Hero */}
+      <section className="border-b border-[var(--border)]">
+        <div className="mx-auto max-w-6xl px-4 py-12 md:py-16 grid md:grid-cols-2 gap-10 items-center">
+          <div className="space-y-5">
+            <h1 className="font-serif text-3xl md:text-4xl lg:text-[2.75rem] leading-tight text-[var(--text-primary)] tracking-tight">
+              {t.heroHeadline}
+            </h1>
+            <p className="text-[var(--text-secondary)] text-lg leading-relaxed max-w-prose">
+              {t.heroSub}
+            </p>
+            <p className="text-sm text-[var(--text-muted)] border-l-2 border-[var(--border-strong)] pl-3">
+              {t.credibility}
+            </p>
+          </div>
+
+          <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden shadow-[var(--shadow)]">
+            <div
+              className="aspect-[16/9] w-full"
+              style={{ background: featured.cover_gradient }}
+              aria-hidden
+            />
+            <div className="p-6 space-y-3">
+              <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                Featured
+              </p>
+              <h2 className="font-serif text-2xl text-[var(--accent)] leading-snug">
+                <Link
+                  href={`/${locale}/article/${featured.slug}`}
+                  className="title-shimmer-hover hover:underline decoration-2 underline-offset-4"
+                >
+                  {featured.title}
+                </Link>
+              </h2>
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+                {featured.dek}
+              </p>
+              <div className="flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
+                <span>
+                  {featured.read_time_minutes} {t.min}
+                </span>
+                <time dateTime={featured.published_at}>
+                  {format(new Date(featured.published_at), "dd MMM yyyy")}
+                </time>
+              </div>
+              <div className="pt-2">
+                <Button
+                  href={`/${locale}/article/${featured.slug}`}
+                  shimmer
+                  size="lg"
+                >
+                  {t.readArticle}
+                </Button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      {/* Search + nav entry */}
+      <section id="search" className="mx-auto max-w-6xl px-4 py-8">
+        <label className="sr-only" htmlFor="site-search">
+          {t.searchLabel}
+        </label>
+        <input
+          id="site-search"
+          type="search"
+          placeholder={t.searchPlaceholder}
+          className="w-full max-w-md rounded-md border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+          disabled
+          title="Search wires to Supabase when connected"
+        />
+      </section>
+
+      {/* Pillar clusters */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 space-y-14">
+        <h2 className="font-serif text-2xl text-[var(--text-primary)]">
+          {t.pillarsTitle}
+        </h2>
+
+        {PILLARS.map((pillar) => {
+          const pillarArticles = articlesByPillar(locale, pillar.slug).slice(
+            0,
+            4
+          );
+          if (pillarArticles.length === 0) return null;
+          const name = locale === "fr" ? pillar.name_fr : pillar.name_en;
+          const desc =
+            locale === "fr" ? pillar.description_fr : pillar.description_en;
+
+          return (
+            <div key={pillar.slug} className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                  {name}
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  {desc}
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pillarArticles.map((a) => (
+                  <ArticleCard key={a.id} article={a} locale={locale} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Flat list fallback for remaining visibility */}
+        <div className="pt-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-4">
+            {t.allArticles}
+          </h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {articles.map((a) => (
+              <ArticleCard key={`all-${a.id}`} article={a} locale={locale} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Soft product bridge */}
+      <section className="border-t border-[var(--border)] bg-[var(--surface-1)]">
+        <div className="mx-auto max-w-6xl px-4 py-12 flex flex-col md:flex-row md:items-center gap-6 md:justify-between">
+          <div className="max-w-xl space-y-2">
+            <h2 className="font-serif text-xl text-[var(--text-primary)]">
+              {t.softBridgeTitle}
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              {t.softBridgeBody}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button href="https://nainoforge.com" shimmer>
+              {t.nainoCta}
+            </Button>
+            <Button href="https://scyforge.com" variant="secondary">
+              {t.scyCta}
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
