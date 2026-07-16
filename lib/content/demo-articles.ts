@@ -1,4 +1,4 @@
-import type { ArticleContent } from "@/lib/blocks/types";
+import type { ArticleContent, BodyBlock } from "@/lib/blocks/types";
 import type { Locale } from "@/lib/locale/resolve";
 import { conversionCopy, resolveProductForPillar } from "@/lib/pillars/mapping";
 
@@ -33,9 +33,8 @@ function buildContent(opts: {
   pillarName: string;
   locale: Locale;
   takeaways: string[];
-  blocks: ArticleContent["sequence"] extends (infer B)[]
-    ? Extract<B, { type: "body_blocks" }>["blocks"]
-    : never;
+  blocks: BodyBlock[];
+
 }): ArticleContent {
   const product = resolveProductForPillar(opts.pillarSlug);
   const conv = conversionCopy(product, opts.locale);
