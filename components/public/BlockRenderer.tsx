@@ -156,7 +156,7 @@ export function BlockRenderer({ block }: { block: BodyBlock }) {
     case "code":
       return <CodeBlockView language={block.language} code={block.code} />;
     case "toggle":
-      return <ToggleView summary={block.summary} children={block.children} />;
+      return <ToggleView summary={block.summary}>{block.children}</ToggleView>;
     case "checklist": {
       const Tag = block.ordered ? "ol" : "ul";
       return (

@@ -1,6 +1,7 @@
 import type {
   ArticleContent,
   BodyBlock,
+  KeyTakeaway,
   ScaffoldBlock,
 } from "./types";
 
@@ -177,7 +178,9 @@ export function validateArticleContent(input: unknown): ValidationIssue[] {
     }
   }
 
-  const takeaway = sequence.find((b) => isRecord(b) && b.type === "key_takeaway");
+  const takeaway = sequence.find((b) => isRecord(b) && String(b.type) === "key_takeaway") as
+    | KeyTakeaway
+    | undefined;
   if (takeaway && isRecord(takeaway)) {
     const items = takeaway.items;
     const skipped = takeaway.skipped === true;
