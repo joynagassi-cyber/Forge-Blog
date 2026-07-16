@@ -1,7 +1,8 @@
 import { BodyBlocks } from "@/components/public/BlockRenderer";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { TableOfContents } from "@/components/public/TableOfContents";
-import { Button } from "@/components/shared/Button";
+import { ArticleViewTracker } from "@/components/analytics/ArticleViewTracker";
+import { ConversionCtaButton } from "@/components/analytics/ConversionCtaButton";
 import { extractToc } from "@/lib/blocks/validate";
 import {
   getArticle,
@@ -91,6 +92,14 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <>
+      <ArticleViewTracker
+        slug={article.slug}
+        locale={locale}
+        pillar={article.pillar_slug}
+        title={article.title}
+        readTimeMinutes={article.read_time_minutes}
+      />
+
       {!other && (
         <div
           className="border-b border-[var(--border)] bg-[var(--surface-1)] px-4 py-2 text-sm text-[var(--text-secondary)]"
@@ -192,9 +201,13 @@ export default async function ArticlePage({ params }: Props) {
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-prose">
                     {conversion.body}
                   </p>
-                  <Button href={conversion.ctaHref} shimmer size="lg">
-                    {conversion.ctaLabel}
-                  </Button>
+                  <ConversionCtaButton
+                    href={conversion.ctaHref}
+                    label={conversion.ctaLabel}
+                    product={conversion.product}
+                    articleSlug={article.slug}
+                    locale={locale}
+                  />
                 </aside>
               )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Locale } from "@/lib/locale/resolve";
+import posthog from "posthog-js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -21,6 +22,15 @@ export function LanguageSwitcher({ locale, enHref, frHref }: Props) {
   const en = enHref ?? `/en${withoutLocale}`;
   const fr = frHref ?? `/fr${withoutLocale}`;
 
+  function handleSwitch(target: "en" | "fr") {
+    if (target !== locale) {
+      posthog.capture("language_switched", {
+        from_locale: locale,
+        to_locale: target,
+      });
+    }
+  }
+
   return (
     <div
       className="flex items-center gap-1 text-sm"
@@ -35,6 +45,7 @@ export function LanguageSwitcher({ locale, enHref, frHref }: Props) {
             : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         }
         hrefLang="en"
+        onClick={() => handleSwitch("en")}
       >
         English
       </Link>
@@ -49,6 +60,7 @@ export function LanguageSwitcher({ locale, enHref, frHref }: Props) {
             : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         }
         hrefLang="fr"
+        onClick={() => handleSwitch("fr")}
       >
         Français
       </Link>

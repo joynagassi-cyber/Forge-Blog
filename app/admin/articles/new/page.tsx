@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import posthog from "posthog-js";
 import { PILLARS } from "@/lib/pillars/mapping";
 
 const STATUSES = [
@@ -22,10 +23,31 @@ const inputClass =
 
 export default function NewArticlePage() {
   const [saved, setSaved] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const form = formRef.current;
+    const data = form ? new FormData(form) : null;
+    posthog.capture("article_idea_saved", {
+      pillar: data?.get("pillar") as string | null,
+      locale: data?.get("locale") as string | null,
+      target_product: data?.get("product") as string | null,
+      status: data?.get("status") as string | null,
+    });
     setSaved(true);
+  }
+
+  function onAiBriefRequested() {
+    const form = formRef.current;
+    const data = form ? new FormData(form) : null;
+    posthog.capture("ai_brief_requested", {
+      pillar: data?.get("pillar") as string | null,
+      locale: data?.get("locale") as string | null,
+    });
+    alert(
+      "AI brief_generation requires a configured provider (admin settings). Human approval required before In review → Published."
+    );
   }
 
   return (
@@ -38,7 +60,7 @@ export default function NewArticlePage() {
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
         <Field label="Working title">
           <input
             name="title"
@@ -123,11 +145,7 @@ export default function NewArticlePage() {
           <button
             type="button"
             className="rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-medium"
-            onClick={() =>
-              alert(
-                "AI brief_generation requires a configured provider (admin settings). Human approval required before In review → Published."
-              )
-            }
+            onClick={onAiBriefRequested}
           >
             Generate brief (AI)
           </button>

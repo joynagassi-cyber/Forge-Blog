@@ -1,5 +1,6 @@
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { Button } from "@/components/shared/Button";
+import { ProductCtaSection } from "@/components/analytics/ProductCtaSection";
 import {
   articlesByPillar,
   getFeatured,
@@ -200,14 +201,12 @@ export default async function HomePage({
               {t.softBridgeBody}
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button href="https://nainoforge.com" shimmer>
-              {t.nainoCta}
-            </Button>
-            <Button href="https://scyforge.com" variant="secondary">
-              {t.scyCta}
-            </Button>
-          </div>
+          <ProductCtaSection
+            ctas={[
+              { href: "https://nainoforge.com", label: t.nainoCta, product: "nainoforge", shimmer: true },
+              { href: "https://scyforge.com", label: t.scyCta, product: "scyforge", variant: "secondary" },
+            ]}
+          />
         </div>
       </section>
     </div>
