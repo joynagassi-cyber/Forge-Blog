@@ -91,7 +91,7 @@ export function validateArticleContent(input: unknown): ValidationIssue[] {
     });
   }
 
-  const bodyEntry = sequence.find((b) => isRecord(b) && b.type === "body_blocks");
+  const bodyEntry = sequence.find((b): b is Extract<ScaffoldBlock, { type: "body_blocks" }> => b.type === "body_blocks");
   if (bodyEntry && isRecord(bodyEntry) && Array.isArray(bodyEntry.blocks)) {
     const blocks = bodyEntry.blocks as BodyBlock[];
     let productBridgeCount = 0;
@@ -177,7 +177,7 @@ export function validateArticleContent(input: unknown): ValidationIssue[] {
     }
   }
 
-  const takeaway = sequence.find((b) => isRecord(b) && b.type === "key_takeaway");
+  const takeaway = sequence.find((b): b is Extract<ScaffoldBlock, { type: "key_takeaway" }> => b.type === "key_takeaway");
   if (takeaway && isRecord(takeaway)) {
     const items = takeaway.items;
     const skipped = takeaway.skipped === true;

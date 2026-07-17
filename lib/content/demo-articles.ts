@@ -1,4 +1,4 @@
-import type { ArticleContent } from "@/lib/blocks/types";
+import type { ArticleContent, BodyBlock } from "@/lib/blocks/types";
 import type { Locale } from "@/lib/locale/resolve";
 import { conversionCopy, resolveProductForPillar } from "@/lib/pillars/mapping";
 
@@ -33,9 +33,7 @@ function buildContent(opts: {
   pillarName: string;
   locale: Locale;
   takeaways: string[];
-  blocks: ArticleContent["sequence"] extends (infer B)[]
-    ? Extract<B, { type: "body_blocks" }>["blocks"]
-    : never;
+  blocks: BodyBlock[];
 }): ArticleContent {
   const product = resolveProductForPillar(opts.pillarSlug);
   const conv = conversionCopy(product, opts.locale);
@@ -71,19 +69,17 @@ function buildContent(opts: {
   };
 }
 
-const AUTHOR_EN = {
-  name: "Forge Editorial",
-  bio: "Written by people building NainoForge and SCYForge, grounded in cognitive science and real SOC operations.",
-};
+const AUTHOR_EN: DemoArticle["author"] = "Joy Nagassi";
+const AUTHOR_EN_BIO =
+  "Joy Nagassi writes about cognitive science, spaced repetition, and how knowledge systems actually work.";
 
-const AUTHOR_FR = {
-  name: "Éditorial Forge",
-  bio: "Rédigé par les équipes qui construisent NainoForge et SCYForge, ancré dans les sciences cognitives et les opérations SOC réelles.",
-};
+const AUTHOR_FR: DemoArticle["author"] = "Joy Nagassi";
+const AUTHOR_FR_BIO =
+  "Joy Nagassi écrit sur les sciences cognitives, la répétition espacée et le fonctionnement réel des systèmes de connaissance.";
 
 export const DEMO_ARTICLES: DemoArticle[] = [
   {
-    id: "a1-en",
+    id: "edbca852-239f-493c-aae9-69fd1f077564",
     slug: "forgetting-curve-spaced-repetition",
     locale: "en",
     translation_group_id: "tg-forgetting",
@@ -92,8 +88,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     excerpt:
       "Ebbinghaus still holds. The fix is not more hours; it is the right intervals.",
     pillar_slug: "retention-memory",
-    author: AUTHOR_EN.name,
-    author_bio: AUTHOR_EN.bio,
+    author: AUTHOR_EN,
+    author_bio: AUTHOR_EN_BIO,
     published_at: "2026-06-12T10:00:00Z",
     updated_at: "2026-07-01T10:00:00Z",
     read_time_minutes: 8,
@@ -102,8 +98,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     content: buildContent({
       title: "The forgetting curve is not your enemy",
       dek: "Why spacing beats cramming, and how to schedule reviews without turning study into a full-time job.",
-      author: AUTHOR_EN.name,
-      authorBio: AUTHOR_EN.bio,
+      author: AUTHOR_EN,
+      authorBio: AUTHOR_EN_BIO,
       publishedAt: "2026-06-12T10:00:00Z",
       updatedAt: "2026-07-01T10:00:00Z",
       readTime: 8,
@@ -243,7 +239,7 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     }),
   },
   {
-    id: "a1-fr",
+    id: "bc2cbf07-81de-4ec3-a735-d3743af52e68",
     slug: "courbe-oubli-repetition-espacee",
     locale: "fr",
     translation_group_id: "tg-forgetting",
@@ -252,8 +248,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     excerpt:
       "Ebbinghaus tient toujours. La solution n'est pas plus d'heures ; ce sont les bons intervalles.",
     pillar_slug: "retention-memory",
-    author: AUTHOR_FR.name,
-    author_bio: AUTHOR_FR.bio,
+    author: AUTHOR_FR,
+    author_bio: AUTHOR_FR_BIO,
     published_at: "2026-06-12T10:00:00Z",
     updated_at: "2026-07-01T10:00:00Z",
     read_time_minutes: 8,
@@ -262,8 +258,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     content: buildContent({
       title: "La courbe d'oubli n'est pas votre ennemie",
       dek: "Pourquoi l'espacement bat le bachotage, et comment planifier des révisions sans y passer sa vie.",
-      author: AUTHOR_FR.name,
-      authorBio: AUTHOR_FR.bio,
+      author: AUTHOR_FR,
+      authorBio: AUTHOR_FR_BIO,
       publishedAt: "2026-06-12T10:00:00Z",
       updatedAt: "2026-07-01T10:00:00Z",
       readTime: 8,
@@ -355,7 +351,7 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     }),
   },
   {
-    id: "a2-en",
+    id: "f4d00b4f-dd7e-467e-9ecf-a9190159055f",
     slug: "soc-onboarding-without-shadowing-forever",
     locale: "en",
     translation_group_id: "tg-soc",
@@ -364,8 +360,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     excerpt:
       "Shadowing is not a curriculum. Semantic structure and proof of skill are.",
     pillar_slug: "soc-onboarding",
-    author: AUTHOR_EN.name,
-    author_bio: AUTHOR_EN.bio,
+    author: AUTHOR_EN,
+    author_bio: AUTHOR_EN_BIO,
     published_at: "2026-05-20T10:00:00Z",
     updated_at: "2026-06-15T10:00:00Z",
     read_time_minutes: 10,
@@ -373,8 +369,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     content: buildContent({
       title: "SOC onboarding without endless shadowing",
       dek: "New analysts need structure, not a seat next to the strongest senior for three months.",
-      author: AUTHOR_EN.name,
-      authorBio: AUTHOR_EN.bio,
+      author: AUTHOR_EN,
+      authorBio: AUTHOR_EN_BIO,
       publishedAt: "2026-05-20T10:00:00Z",
       updatedAt: "2026-06-15T10:00:00Z",
       readTime: 10,
@@ -451,7 +447,7 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     }),
   },
   {
-    id: "a2-fr",
+    id: "68840661-847a-47d1-910a-a753008abacc",
     slug: "onboarding-soc-sans-ombre-infinie",
     locale: "fr",
     translation_group_id: "tg-soc",
@@ -460,8 +456,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     excerpt:
       "L'ombre n'est pas un curriculum. La structure sémantique et la preuve de compétence le sont.",
     pillar_slug: "soc-onboarding",
-    author: AUTHOR_FR.name,
-    author_bio: AUTHOR_FR.bio,
+    author: AUTHOR_FR,
+    author_bio: AUTHOR_FR_BIO,
     published_at: "2026-05-20T10:00:00Z",
     updated_at: "2026-06-15T10:00:00Z",
     read_time_minutes: 10,
@@ -469,8 +465,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     content: buildContent({
       title: "Onboarding SOC sans ombre infinie",
       dek: "Les nouveaux analystes ont besoin de structure, pas d'un siège à côté du senior pendant trois mois.",
-      author: AUTHOR_FR.name,
-      authorBio: AUTHOR_FR.bio,
+      author: AUTHOR_FR,
+      authorBio: AUTHOR_FR_BIO,
       publishedAt: "2026-05-20T10:00:00Z",
       updatedAt: "2026-06-15T10:00:00Z",
       readTime: 10,
@@ -521,7 +517,7 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     }),
   },
   {
-    id: "a3-en",
+    id: "e0774e8c-9ce0-4fda-9cb4-a819a2b8591d",
     slug: "sm-2-vs-fsrs",
     locale: "en",
     translation_group_id: "tg-fsrs",
@@ -530,8 +526,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     excerpt:
       "FSRS models memory more honestly than SM-2. That changes review load.",
     pillar_slug: "fsrs-algorithms",
-    author: AUTHOR_EN.name,
-    author_bio: AUTHOR_EN.bio,
+    author: AUTHOR_EN,
+    author_bio: AUTHOR_EN_BIO,
     published_at: "2026-04-08T10:00:00Z",
     updated_at: "2026-04-08T10:00:00Z",
     read_time_minutes: 7,
@@ -539,8 +535,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     content: buildContent({
       title: "SM-2 vs FSRS: what actually changed",
       dek: "A clear comparison of scheduling assumptions without mystique.",
-      author: AUTHOR_EN.name,
-      authorBio: AUTHOR_EN.bio,
+      author: AUTHOR_EN,
+      authorBio: AUTHOR_EN_BIO,
       publishedAt: "2026-04-08T10:00:00Z",
       updatedAt: "2026-04-08T10:00:00Z",
       readTime: 7,
@@ -594,7 +590,288 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     }),
   },
   {
-    id: "a4-en",
+    id: "de0d13f7-1def-474f-99b5-2565598c9bd0",
+    slug: "sm-2-vs-fsrs",
+    locale: "fr",
+    translation_group_id: "tg-fsrs",
+    title: "SM-2 vs FSRS : ce qui a vraiment changé",
+    dek: "Comparaison claire des hypothèses de planification, sans mysticisme.",
+    excerpt:
+      "FSRS modélise la mémoire plus honnêtement que SM-2. Cela change la charge de révision.",
+    pillar_slug: "fsrs-algorithms",
+    author: AUTHOR_FR,
+    author_bio: AUTHOR_FR_BIO,
+    published_at: "2026-04-08T10:00:00Z",
+    updated_at: "2026-04-08T10:00:00Z",
+    read_time_minutes: 14,
+    cover_gradient: "linear-gradient(135deg, #0A0A0C 0%, #1F1F23 100%)",
+    content: buildContent({
+      title: "SM-2 vs FSRS : ce qui a vraiment changé",
+      dek: "Comparaison claire des hypothèses de planification, sans mysticisme.",
+      author: AUTHOR_FR,
+      authorBio: AUTHOR_FR_BIO,
+      publishedAt: "2026-04-08T10:00:00Z",
+      updatedAt: "2026-04-08T10:00:00Z",
+      readTime: 14,
+      pillarSlug: "fsrs-algorithms",
+      pillarName: "FSRS & algorithmes",
+      locale: "fr",
+      takeaways: [
+        "SM-2 est un heuristique simple qui a fait ses preuves pendant des décennies.",
+        "FSRS modélise la difficulté et la stabilité plus explicitement.",
+        "Aucun algorithme ne remplace une bonne conception de cartes.",
+        "Choisir selon la charge et la qualité des révisions, pas par fidélité à une marque.",
+      ],
+      blocks: [
+        {
+          id: "p1",
+          type: "paragraph",
+          spans: [
+            {
+              text: 'Les débats sur les algorithmes se noient souvent dans la personnalité. Dépouillons : quel état chaque modèle suit-il, et comment décide-t-il du prochain intervalle ?',
+            },
+          ],
+        },
+        {
+          id: "h2-1",
+          type: "h2",
+          text: "Comparaison côte à côte",
+          anchor: "comparaison-cote-a-cote",
+        },
+        {
+          id: "table-1",
+          type: "table",
+          headers: ["Aspect", "SM-2", "FSRS"],
+          rows: [
+            ["Idée centrale", "Facteur d'aisance + pas d'intervalle", "Modèle stabilité / difficulté"],
+            ["Personnalisation", "Par carte (easiness)", "Paramètres plus riches par carte"],
+            ["Échec", "Reset brutal", "Ajustements plus gradués"],
+            ["Complexité", "Faible", "Plus élevée, mieux masquée"],
+          ],
+        },
+        {
+          id: "quote-1",
+          type: "quote",
+          spans: [
+            {
+              text: "Un algorithme ne peut pas réparer une carte qui pose trois questions à la fois.",
+            },
+          ],
+          attribution: "Note éditoriale",
+        },
+      ],
+    }),
+  },
+  {
+    id: "ea827264-8165-4a90-902e-9d9ae520c9f1",
+    slug: "semantic-trees-knowledge-structure",
+    locale: "en",
+    translation_group_id: "tg-semanic-trees",
+    title: "Semantic trees and the structure of knowledge",
+    dek: "Organizing information into meaningful hierarchies is how durable understanding actually happens.",
+    excerpt:
+      "Isolated facts are fragile. Concepts linked to a network stick for years.",
+    pillar_slug: "ops-cyber",
+    author: AUTHOR_EN,
+    author_bio: AUTHOR_EN_BIO,
+    published_at: "2026-07-01T10:00:00Z",
+    updated_at: "2026-07-01T10:00:00Z",
+    read_time_minutes: 10,
+    cover_gradient: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
+    content: buildContent({
+      title: "Semantic trees and the structure of knowledge",
+      dek: "Organizing information into meaningful hierarchies is how durable understanding actually happens.",
+      author: AUTHOR_EN,
+      authorBio: AUTHOR_EN_BIO,
+      publishedAt: "2026-07-01T10:00:00Z",
+      updatedAt: "2026-07-01T10:00:00Z",
+      readTime: 10,
+      pillarSlug: "ops-cyber",
+      pillarName: "Operational Cybersecurity",
+      locale: "en",
+      takeaways: [
+        "Meaning emerges from relationships, not isolated facts.",
+        "A concept inherits context from its ancestors, compressing information and accelerating recall.",
+        "Hierarchies are a compression mechanism — the right structure replaces memorization.",
+      ],
+      blocks: [
+        {
+          id: "p1",
+          type: "paragraph",
+          spans: [
+            {
+              text: "An isolated fact is fragile. A fact linked to a network of existing concepts anchors itself. Meaning is born from relations, not from isolated items. This is why experts recall faster: their mental models are dense, well-organized trees, not scattered leaves.",
+            },
+          ],
+        },
+        {
+          id: "callout-1",
+          type: "callout",
+          variant: "info",
+          title: "Key intuition",
+          spans: [
+            {
+              text: "A concept inherits the context of its ancestors, which compresses information and speeds up retrieval.",
+            },
+          ],
+        },
+        {
+          id: "h2-1",
+          type: "h2",
+          text: "Hierarchy and inheritance",
+          anchor: "hierarchy-and-inheritance",
+        },
+        {
+          id: "p2",
+          type: "paragraph",
+          spans: [
+            {
+              text: "The semantic tree organizes concepts from the general to the specific. Each descendant level specializes the previous one through an 'is-a' relationship. {'Félin'} inherits {'mammal'} inherits {'animal'} — each node carries the context of its ancestors without restating it.",
+            },
+          ],
+        },
+        {
+          id: "h2-2",
+          type: "h2",
+          text: "Trees vs graphs",
+          anchor: "trees-vs-graphs",
+        },
+        {
+          id: "table-1",
+          type: "table",
+          headers: ["Criterion", "Tree", "Graph"],
+          rows: [
+            ["Structure", "Strict hierarchy", "Multiple relations"],
+            ["Best for", "Taxonomies, plans", "Conceptual networks"],
+            ["Risk", "Rigidity", "Cognitive overload"],
+          ],
+        },
+        {
+          id: "h2-3",
+          type: "h2",
+          text: "Building your own tree",
+          anchor: "building-your-tree",
+        },
+        {
+          id: "list-1",
+          type: "checklist",
+          ordered: false,
+          items: [
+            { text: "Identify 3–5 root concepts in the domain.", checked: true },
+            { text: "Place concepts by 'is-a' relation.", checked: true },
+            { text: "Add cross-links only after the hierarchy is solid.", checked: false },
+          ],
+        },
+      ],
+    }),
+    featured: true,
+  },
+  {
+    id: "8db56f40-f02a-4c3d-abe1-9d6e1ebc6680",
+    slug: "arbres-semantiques-structure-connaissance",
+    locale: "fr",
+    translation_group_id: "tg-semanic-trees",
+    title: "Arbres sémantiques et structure de la connaissance",
+    dek: "Organiser l'information en hiérarchies significatives, c'est ainsi que la compréhension durable s'ancre réellement.",
+    excerpt:
+      "Une information isolée est fragile. Un concept relié à un réseau s'ancre pour des années.",
+    pillar_slug: "ops-cyber",
+    author: AUTHOR_FR,
+    author_bio: AUTHOR_FR_BIO,
+    published_at: "2026-07-01T10:00:00Z",
+    updated_at: "2026-07-01T10:00:00Z",
+    read_time_minutes: 10,
+    cover_gradient: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
+    content: buildContent({
+      title: "Arbres sémantiques et structure de la connaissance",
+      dek: "Organiser l'information en hiérarchies significatives, c'est ainsi que la compréhension durable s'ancre réellement.",
+      author: AUTHOR_FR,
+      authorBio: AUTHOR_FR_BIO,
+      publishedAt: "2026-07-01T10:00:00Z",
+      updatedAt: "2026-07-01T10:00:00Z",
+      readTime: 10,
+      pillarSlug: "ops-cyber",
+      pillarName: "Cybersécurité opérationnelle",
+      locale: "fr",
+      takeaways: [
+        "Le sens naît des relations, pas des faits isolés.",
+        "Un concept hérite du contexte de ses ancêtres, comprimant l'information et accélérant le rappel.",
+        "Les hiérarchies sont un mécanisme de compression — la bonne structure remplace la mémorisation.",
+      ],
+      blocks: [
+        {
+          id: "p1",
+          type: "paragraph",
+          spans: [
+            {
+              text: "Une information isolée est fragile. Une information reliée à un réseau de concepts existants s'ancre durablement. Le sens naît des relations, pas des faits isolés. C'est pourquoi les experts rappellent plus vite : leurs modèles mentaux sont des arbres denses et bien organisés, pas des feuilles éparpillées.",
+            },
+          ],
+        },
+        {
+          id: "callout-1",
+          type: "callout",
+          variant: "info",
+          title: "Intuition clé",
+          spans: [
+            {
+              text: "Un concept hérite du contexte de ses ancêtres, ce qui compresse l'information et accélère le rappel.",
+            },
+          ],
+        },
+        {
+          id: "h2-1",
+          type: "h2",
+          text: "Hiérarchie et héritage",
+          anchor: "hierarchie-et-heritage",
+        },
+        {
+          id: "p2",
+          type: "paragraph",
+          spans: [
+            {
+              text: "L'arbre sémantique organise les concepts du général au particulier. Chaque niveau descendant spécialise le précédent via une relation « est-un ». {'Félin'} hérite de {'mammifère'} hérite de {'animal'} — chaque nœud porte le contexte de ses ancêtres sans le redire.",
+            },
+          ],
+        },
+        {
+          id: "h2-2",
+          type: "h2",
+          text: "Arbres vs graphes",
+          anchor: "arbres-vs-graphes",
+        },
+        {
+          id: "table-1",
+          type: "table",
+          headers: ["Critère", "Arbre", "Graphe"],
+          rows: [
+            ["Structure", "Hiérarchie stricte", "Relations multiples"],
+            ["Idéal pour", "Taxonomies, plans", "Réseaux conceptuels"],
+            ["Risque", "Rigidité", "Surcharge cognitive"],
+          ],
+        },
+        {
+          id: "h2-3",
+          type: "h2",
+          text: "Construire son arbre",
+          anchor: "construire-son-arbre",
+        },
+        {
+          id: "list-1",
+          type: "checklist",
+          ordered: false,
+          items: [
+            { text: "Identifier les 3 à 5 concepts racines du domaine.", checked: true },
+            { text: "Placer les concepts par relation « est-un ».", checked: true },
+            { text: "Ajouter les liens transversaux après la hiérarchie.", checked: false },
+          ],
+        },
+      ],
+    }),
+    featured: true,
+  },
+  {
+    id: "ce8ed523-164a-45b7-aa9f-2278fb9b2522",
     slug: "proof-of-skill-not-hours",
     locale: "en",
     translation_group_id: "tg-pos",
@@ -603,8 +880,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     excerpt:
       "Hours logged is a poor proxy. Demonstrated decisions are not.",
     pillar_slug: "proof-of-skill",
-    author: AUTHOR_EN.name,
-    author_bio: AUTHOR_EN.bio,
+    author: AUTHOR_EN,
+    author_bio: AUTHOR_EN_BIO,
     published_at: "2026-03-18T10:00:00Z",
     updated_at: "2026-05-01T10:00:00Z",
     read_time_minutes: 6,
@@ -612,8 +889,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     content: buildContent({
       title: "Proof of skill, not hours in seat",
       dek: "Readiness metrics that survive an audit and still help the analyst.",
-      author: AUTHOR_EN.name,
-      authorBio: AUTHOR_EN.bio,
+      author: AUTHOR_EN,
+      authorBio: AUTHOR_EN_BIO,
       publishedAt: "2026-03-18T10:00:00Z",
       updatedAt: "2026-05-01T10:00:00Z",
       readTime: 6,
@@ -655,7 +932,7 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     }),
   },
   {
-    id: "a5-en",
+    id: "3594488d-ddbf-41ff-ad4d-e84583dc445a",
     slug: "imprint-active-encoding",
     locale: "en",
     translation_group_id: "tg-imprint",
@@ -664,8 +941,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     excerpt:
       "Passive highlights die. Active encoding while reading changes retention.",
     pillar_slug: "active-learning",
-    author: AUTHOR_EN.name,
-    author_bio: AUTHOR_EN.bio,
+    author: AUTHOR_EN,
+    author_bio: AUTHOR_EN_BIO,
     published_at: "2026-02-10T10:00:00Z",
     updated_at: "2026-02-10T10:00:00Z",
     read_time_minutes: 5,
@@ -673,8 +950,8 @@ export const DEMO_ARTICLES: DemoArticle[] = [
     content: buildContent({
       title: "IMPRINT: active encoding while you browse",
       dek: "Capture meaning at the moment of learning, not hours later in a notes app graveyard.",
-      author: AUTHOR_EN.name,
-      authorBio: AUTHOR_EN.bio,
+      author: AUTHOR_EN,
+      authorBio: AUTHOR_EN_BIO,
       publishedAt: "2026-02-10T10:00:00Z",
       updatedAt: "2026-02-10T10:00:00Z",
       readTime: 5,
@@ -764,4 +1041,38 @@ export function articlesByPillar(
   pillarSlug: string
 ): DemoArticle[] {
   return getArticles(locale).filter((a) => a.pillar_slug === pillarSlug);
+}
+
+export function getTranslationCoverage() {
+  const groups = new Map<string, DemoArticle[]>();
+
+  for (const article of DEMO_ARTICLES) {
+    const current = groups.get(article.translation_group_id) ?? [];
+    current.push(article);
+    groups.set(article.translation_group_id, current);
+  }
+
+  let completeGroups = 0;
+  let missingEn = 0;
+  let missingFr = 0;
+
+  for (const articles of groups.values()) {
+    const hasEn = articles.some((article) => article.locale === "en");
+    const hasFr = articles.some((article) => article.locale === "fr");
+
+    if (hasEn && hasFr) {
+      completeGroups += 1;
+      continue;
+    }
+
+    if (hasEn) missingFr += 1;
+    if (hasFr) missingEn += 1;
+  }
+
+  return {
+    totalGroups: groups.size,
+    completeGroups,
+    missingEn,
+    missingFr,
+  };
 }

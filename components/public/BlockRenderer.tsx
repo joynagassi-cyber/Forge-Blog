@@ -4,10 +4,29 @@ import { Button } from "@/components/shared/Button";
 import type { BodyBlock } from "@/lib/blocks/types";
 import { RichText } from "./RichText";
 import { DiagramBlockView } from "./DiagramBlockView";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function CodeBlockView({ language, code }: { language: string; code: string }) {
+  const codeRef = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function highlight() {
+      try {
+        const [{ default: Prism }, { default: theme }] = await Promise.all([
+          import("prismjs"),
+          import(`prismjs/components/prism-${(language || "text").toLowerCase()}`),
+        ]);
+        if (cancelled || !codeRef.current) return;
+        Prism.highlightElement(codeRef.current);
+      } catch {
+        // unknown language or prism load failed — plain text fallback
+      }
+    }
+    void highlight();
+    return () => { cancelled = true; };
+  }, [language, code]);
 
   async function copy() {
     await navigator.clipboard.writeText(code);
@@ -27,8 +46,10 @@ function CodeBlockView({ language, code }: { language: string; code: string }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto p-4 text-sm font-mono text-[var(--text-primary)]">
-        <code>{code}</code>
+      <pre className="overflow-x-auto p-4 text-sm font-mono">
+        <code ref={codeRef} className={`language-${language || "text"}`}>
+          {code}
+        </code>
       </pre>
     </div>
   );
@@ -93,13 +114,16 @@ export function BlockRenderer({ block }: { block: BodyBlock }) {
         </h3>
       );
     case "callout": {
-      const border =
-        block.variant === "verify"
-          ? "border-amber-500/40"
-          : "border-[var(--border)]";
+      const variantClasses: Record<string, string> = {
+        info: "border-[var(--border-strong)] bg-[var(--surface-1)]",
+        warning: "border-amber-500/40 bg-[var(--amber-soft)]",
+        verify: "border-amber-500/40 bg-[var(--amber-soft)]",
+        tip: "border-emerald-500/40 bg-[var(--green-soft)]",
+      };
+      const cls = variantClasses[block.variant] ?? variantClasses.info;
       return (
         <aside
-          className={`rounded-lg border ${border} bg-[var(--surface-1)] px-4 py-3`}
+          className={`rounded-lg border ${cls} px-4 py-3`}
         >
           {block.title && (
             <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">
@@ -156,7 +180,11 @@ export function BlockRenderer({ block }: { block: BodyBlock }) {
     case "code":
       return <CodeBlockView language={block.language} code={block.code} />;
     case "toggle":
-      return <ToggleView summary={block.summary} children={block.children} />;
+      return (
+        <ToggleView summary={block.summary}>
+          {block.children}
+        </ToggleView>
+      );
     case "checklist": {
       const Tag = block.ordered ? "ol" : "ul";
       return (
@@ -168,7 +196,17 @@ export function BlockRenderer({ block }: { block: BodyBlock }) {
           }
         >
           {block.items.map((item, i) => (
-            <li key={i}>{item.text}</li>
+            <li
+              key={i}
+              className={
+                item.checked
+                  ? "line-through text-[var(--text-muted)]"
+                  : "text-[var(--text-primary)]"
+              }
+            >
+              {item.checked ? "✓ " : "○ "}
+              {item.text}
+            </li>
           ))}
         </Tag>
       );

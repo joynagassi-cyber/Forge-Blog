@@ -1,20 +1,70 @@
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { Button } from "@/components/shared/Button";
+import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
 import {
-  articlesByPillar,
-  getFeatured,
-  getArticles,
-} from "@/lib/content/demo-articles";
+  fromArticleRow,
+  fromDemoArticle,
+  type PublicArticle,
+} from "@/lib/content/public-article";
+import { formatLocalizedDate } from "@/lib/locale/format";
 import type { Locale } from "@/lib/locale/resolve";
 import { PILLARS } from "@/lib/pillars/mapping";
-import { format } from "date-fns";
+import {
+  getPublishedArticles,
+} from "@/lib/supabase/queries";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
+const SITE_NAME = "NainoForge";
+const TAGLINE_EN = "Sciences de l'apprentissage · Comprendre comment le cerveau apprend, retient et connecte les idées.";
+const TAGLINE_FR = "Sciences de l'apprentissage · Comprendre comment le cerveau apprend, retient et connecte les idées.";
+
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale: raw } = await params;
+  if (raw !== "en" && raw !== "fr") return {};
+
+  const canonical = `${SITE_URL}/${raw}`;
+
+  const title = {
+    en: `${SITE_NAME} · Sciences de l'apprentissage`,
+    fr: `${SITE_NAME} · Sciences de l'apprentissage`,
+  }[raw];
+
+  const description = {
+    en: TAGLINE_EN,
+    fr: TAGLINE_FR,
+  }[raw];
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical,
+      languages: {
+        en: `${SITE_URL}/en`,
+        fr: `${SITE_URL}/fr`,
+        "x-default": `${SITE_URL}/en`,
+      },
+    },
+    openGraph: {
+      type: "website",
+      url: canonical,
+      title: title ?? "",
+      description: description ?? "",
+      locale: raw === "fr" ? "fr_FR" : "en_US",
+      alternateLocale: raw === "fr" ? "en_US" : "fr_FR",
+      siteName: SITE_NAME,
+    },
+  };
+}
+
 const copy = {
   en: {
-    heroHeadline:
-      "Master what you learn. Make your SOC ready faster.",
+    heroHeadline: "Master what you learn. Make your SOC ready faster.",
     heroSub:
       "Deep writing on memory science and operational cyber from the teams building NainoForge and SCYForge.",
     credibility:
@@ -32,8 +82,7 @@ const copy = {
     allArticles: "All articles",
   },
   fr: {
-    heroHeadline:
-      "Maîtrisez ce que vous apprenez. Accélérez la readiness SOC.",
+    heroHeadline: "Maîtrisez ce que vous apprenez. Accélérez la readiness SOC.",
     heroSub:
       "Écrits de fond sur la mémoire et le cyber opérationnel, par les équipes de NainoForge et SCYForge.",
     credibility:
@@ -52,17 +101,25 @@ const copy = {
   },
 };
 
-export default async function HomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+/** Resolve articles: Supabase if available, demo fallback otherwise. */
+async function resolveArticles(locale: Locale): Promise<PublicArticle[]> {
+  const rows = await getPublishedArticles(locale);
+  if (rows && rows.length > 0) {
+    return rows.map((r, i) => fromArticleRow({ ...r, featured: i === 0 }));
+  }
+  // Demo fallback — Supabase not connected or no published articles yet.
+  const demo = DEMO_ARTICLES.filter((a) => a.locale === locale);
+  return demo.map(fromDemoArticle);
+}
+
+export default async function HomePage({ params }: Props) {
   const { locale: raw } = await params;
   if (raw !== "en" && raw !== "fr") notFound();
   const locale = raw as Locale;
   const t = copy[locale];
-  const featured = getFeatured(locale);
-  const articles = getArticles(locale);
+
+  const articles = await resolveArticles(locale);
+  const featured = articles.find((a) => a.featured) ?? articles[0];
 
   if (!featured) notFound();
 
@@ -84,11 +141,20 @@ export default async function HomePage({
           </div>
 
           <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden shadow-[var(--shadow)]">
-            <div
-              className="aspect-[16/9] w-full"
-              style={{ background: featured.cover_gradient }}
-              aria-hidden
-            />
+            {featured.cover_image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={featured.cover_image_url}
+                alt={featured.cover_image_alt ?? featured.title}
+                className="aspect-[16/9] w-full object-cover"
+              />
+            ) : (
+              <div
+                className="aspect-[16/9] w-full"
+                style={{ background: featured.cover_gradient }}
+                aria-hidden
+              />
+            )}
             <div className="p-6 space-y-3">
               <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
                 Featured
@@ -109,7 +175,7 @@ export default async function HomePage({
                   {featured.read_time_minutes} {t.min}
                 </span>
                 <time dateTime={featured.published_at}>
-                  {format(new Date(featured.published_at), "dd MMM yyyy")}
+                  {formatLocalizedDate(featured.published_at, locale)}
                 </time>
               </div>
               <div className="pt-2">
@@ -137,7 +203,7 @@ export default async function HomePage({
           placeholder={t.searchPlaceholder}
           className="w-full max-w-md rounded-md border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
           disabled
-          title="Search wires to Supabase when connected"
+          title="Search wires to Supabase full-text search when connected"
         />
       </section>
 
@@ -148,10 +214,9 @@ export default async function HomePage({
         </h2>
 
         {PILLARS.map((pillar) => {
-          const pillarArticles = articlesByPillar(locale, pillar.slug).slice(
-            0,
-            4
-          );
+          const pillarArticles = articles
+            .filter((a) => a.pillar_slug === pillar.slug)
+            .slice(0, 4);
           if (pillarArticles.length === 0) return null;
           const name = locale === "fr" ? pillar.name_fr : pillar.name_en;
           const desc =
@@ -176,7 +241,7 @@ export default async function HomePage({
           );
         })}
 
-        {/* Flat list fallback for remaining visibility */}
+        {/* Flat list: all articles not already shown in pillar clusters */}
         <div className="pt-4">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-4">
             {t.allArticles}

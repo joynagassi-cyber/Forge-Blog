@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter, Source_Serif_4 } from "next/font/google";
+import { cookies } from "next/headers";
+import { LOCALE_COOKIE, type Locale } from "@/lib/locale/resolve";
 import "./globals.css";
+import { PostHogProvider } from "@/components/shared/PostHogProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,25 +24,31 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Forge-Blog",
-    template: "%s · Forge-Blog",
+    default: "NainoForge",
+    template: "%s · NainoForge",
   },
   description:
-    "Editorial depth on active learning and SOC readiness from the teams behind NainoForge and SCYForge.",
+    "Sciences de l'apprentissage — Comprendre comment le cerveau apprend, retient et connecte les idées.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get(LOCALE_COOKIE)?.value;
+  const lang: Locale = localeCookie === "fr" ? "fr" : "en";
+
   return (
     <html
-      lang="en"
+      lang={lang}
+      data-theme="light"
       className={`${inter.variable} ${sourceSerif.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text-primary)]">
+        <PostHogProvider />
         {children}
       </body>
     </html>

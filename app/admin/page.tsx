@@ -1,4 +1,7 @@
-import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
+import {
+  DEMO_ARTICLES,
+  getTranslationCoverage,
+} from "@/lib/content/demo-articles";
 import Link from "next/link";
 
 const statuses = [
@@ -11,6 +14,7 @@ const statuses = [
 export default function AdminOverviewPage() {
   const published = DEMO_ARTICLES.filter((a) => a.locale === "en").length;
   const total = DEMO_ARTICLES.length;
+  const translationCoverage = getTranslationCoverage();
 
   return (
     <div className="space-y-8 max-w-5xl">
@@ -36,7 +40,14 @@ export default function AdminOverviewPage() {
         {[
           { label: "Demo articles", value: total },
           { label: "EN published (demo)", value: published },
-          { label: "FR counterparts", value: DEMO_ARTICLES.filter((a) => a.locale === "fr").length },
+          {
+            label: "Complete translation groups",
+            value: translationCoverage.completeGroups,
+          },
+          {
+            label: "Missing FR translations",
+            value: translationCoverage.missingFr,
+          },
           { label: "SEO warnings", value: 0 },
         ].map((card) => (
           <div
@@ -74,7 +85,7 @@ export default function AdminOverviewPage() {
             <li>Connect Supabase (URL + anon key in .env.local)</li>
             <li>Run migrations in supabase/migrations</li>
             <li>Configure AI providers under Settings</li>
-            <li>Translate remaining EN-only demo articles to FR</li>
+            <li>Translate the remaining EN-only demo articles to FR</li>
           </ol>
         </div>
       </section>

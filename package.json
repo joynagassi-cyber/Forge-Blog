@@ -11,12 +11,16 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@blocknote/core": "^0.51.4",
+    "@blocknote/react": "^0.51.4",
+    "@posthog/nextjs": "^0.0.2",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.5",
     "@xyflow/react": "^12.11.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "next": "16.2.10",
+    "prismjs": "^1.30.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.4.3"
@@ -29,6 +33,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
+    "tsx": "^4.23.1",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }

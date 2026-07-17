@@ -1,11 +1,11 @@
-import type { DemoArticle } from "@/lib/content/demo-articles";
+import type { PublicArticle } from "@/lib/content/public-article";
+import { formatLocalizedDate } from "@/lib/locale/format";
 import type { Locale } from "@/lib/locale/resolve";
 import { getPillar } from "@/lib/pillars/mapping";
-import { format } from "date-fns";
 import Link from "next/link";
 
 type Props = {
-  article: DemoArticle;
+  article: PublicArticle;
   locale: Locale;
 };
 
@@ -19,11 +19,20 @@ export function ArticleCard({ article, locale }: Props) {
       href={`/${locale}/article/${article.slug}`}
       className="group flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
     >
-      <div
-        className="aspect-video w-full"
-        style={{ background: article.cover_gradient }}
-        aria-hidden
-      />
+      {article.cover_image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={article.cover_image_url}
+          alt={article.cover_image_alt ?? article.title}
+          className="aspect-video w-full object-cover"
+        />
+      ) : (
+        <div
+          className="aspect-video w-full"
+          style={{ background: article.cover_gradient }}
+          aria-hidden
+        />
+      )}
       <div className="flex flex-col gap-2 p-4 flex-1">
         <h3 className="font-serif text-lg leading-snug text-[var(--accent)] line-clamp-2 group-hover:underline decoration-2 underline-offset-4 title-shimmer-hover">
           {article.title}
@@ -35,7 +44,7 @@ export function ArticleCard({ article, locale }: Props) {
           {pillarName && <span>{pillarName}</span>}
           <span>{article.read_time_minutes} min</span>
           <time dateTime={article.published_at}>
-            {format(new Date(article.published_at), "dd MMM yyyy")}
+            {formatLocalizedDate(article.published_at, locale)}
           </time>
           <span>{article.author}</span>
         </div>

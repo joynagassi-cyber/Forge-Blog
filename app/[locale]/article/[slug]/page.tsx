@@ -2,48 +2,137 @@ import { BodyBlocks } from "@/components/public/BlockRenderer";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { TableOfContents } from "@/components/public/TableOfContents";
 import { Button } from "@/components/shared/Button";
+import { captureCtaClick } from "@/components/shared/PostHogProvider";
 import { extractToc } from "@/lib/blocks/validate";
 import {
-  getArticle,
-  getRelated,
-  getTranslation,
+  DEMO_ARTICLES,
+  getArticle as getDemoArticle,
 } from "@/lib/content/demo-articles";
+import {
+  fromArticleRow,
+  fromDemoArticle,
+  type PublicArticle,
+} from "@/lib/content/public-article";
+import { formatLocalizedDate } from "@/lib/locale/format";
 import type { Locale } from "@/lib/locale/resolve";
-import { format } from "date-fns";
+import {
+  getPublishedArticle,
+  getRelatedArticles,
+  getTranslationCounterpart,
+} from "@/lib/supabase/queries";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
 };
 
+// ---------------------------------------------------------------------------
+// Data resolution helpers (Supabase-first, demo fallback)
+// ---------------------------------------------------------------------------
+
+async function resolveArticle(
+  locale: Locale,
+  slug: string
+): Promise<PublicArticle | null> {
+  const row = await getPublishedArticle(locale, slug);
+  if (row) return fromArticleRow(row);
+
+  const demo = getDemoArticle(locale, slug);
+  return demo ? fromDemoArticle(demo) : null;
+}
+
+async function resolveTranslation(
+  article: PublicArticle,
+  targetLocale: Locale
+): Promise<PublicArticle | null> {
+  const row = await getTranslationCounterpart(
+    article.translation_group_id,
+    targetLocale
+  );
+  if (row) return fromArticleRow(row);
+
+  // Demo fallback
+  const demo = DEMO_ARTICLES.find(
+    (a) =>
+      a.translation_group_id === article.translation_group_id &&
+      a.locale === targetLocale
+  );
+  return demo ? fromDemoArticle(demo) : null;
+}
+
+async function resolveRelated(
+  article: PublicArticle,
+  locale: Locale
+): Promise<PublicArticle[]> {
+  const rows = await getRelatedArticles(
+    article.id,
+    article.pillar_slug || null,
+    locale,
+    3
+  );
+  if (rows.length > 0) return rows.map(fromArticleRow);
+
+  // Demo fallback
+  const demo = DEMO_ARTICLES.filter(
+    (a) =>
+      a.locale === locale &&
+      a.id !== article.id &&
+      a.pillar_slug === article.pillar_slug
+  ).slice(0, 3);
+  return demo.map(fromDemoArticle);
+}
+
+// ---------------------------------------------------------------------------
+// Metadata
+// ---------------------------------------------------------------------------
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: raw, slug } = await params;
   if (raw !== "en" && raw !== "fr") return {};
-  const article = getArticle(raw, slug);
+  const locale = raw as Locale;
+
+  const article = await resolveArticle(locale, slug);
   if (!article) return {};
 
-  const alt = getTranslation(article, raw === "en" ? "fr" : "en");
+  const alt = await resolveTranslation(
+    article,
+    locale === "en" ? "fr" : "en"
+  );
+  // x-default always points to the English canonical (primary beachhead, section 8.2).
+  const enVersion = locale === "en" ? article : alt ?? article;
 
   return {
     title: article.title,
     description: article.excerpt,
     alternates: {
-      canonical: `/${raw}/article/${slug}`,
+      canonical: `${SITE_URL}/${locale}/article/${slug}`,
       languages: {
-        en: alt && raw === "fr" ? `/en/article/${alt.slug}` : `/en/article/${article.slug}`,
-        fr: alt && raw === "en" ? `/fr/article/${alt.slug}` : `/fr/article/${article.slug}`,
-        "x-default":
-          article.locale === "en"
-            ? `/en/article/${article.slug}`
-            : alt
-              ? `/en/article/${alt.slug}`
-              : `/fr/article/${article.slug}`,
+        [locale]: `${SITE_URL}/${locale}/article/${article.slug}`,
+        ...(alt
+          ? { [alt.locale]: `${SITE_URL}/${alt.locale}/article/${alt.slug}` }
+          : {}),
+        "x-default": `${SITE_URL}/en/article/${enVersion.slug}`,
       },
+    },
+    openGraph: {
+      type: "article",
+      url: `${SITE_URL}/${locale}/article/${slug}`,
+      title: article.title,
+      description: article.excerpt ?? undefined,
+      locale: locale === "fr" ? "fr_FR" : "en_US",
+      alternateLocale: locale === "fr" ? "en_US" : "fr_FR",
+      siteName: "Forge-Blog",
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Copy
+// ---------------------------------------------------------------------------
 
 const copy = {
   en: {
@@ -52,11 +141,9 @@ const copy = {
     related: "Related articles",
     published: "Published",
     updated: "Updated",
-    missingTranslation:
-      "This article is not yet available in English. Reading the French version.",
-    missingTranslationFr:
-      "Cet article n'est pas encore disponible en français. Lecture de la version anglaise.",
     breadcrumbHome: "Home",
+    missingLang: "This article is not yet available in French.",
+    missingLangFr: "Cet article n'est pas encore disponible en anglais.",
   },
   fr: {
     toc: "Sur cette page",
@@ -64,19 +151,22 @@ const copy = {
     related: "Articles liés",
     published: "Publié",
     updated: "Mis à jour",
-    missingTranslation:
-      "This article is not yet available in English. Reading the French version.",
-    missingTranslationFr:
-      "Cet article n'est pas encore disponible en français. Lecture de la version anglaise.",
     breadcrumbHome: "Accueil",
+    missingLang: "Cet article n'est pas encore disponible en français.",
+    missingLangFr: "This article is not yet available in English.",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default async function ArticlePage({ params }: Props) {
   const { locale: raw, slug } = await params;
   if (raw !== "en" && raw !== "fr") notFound();
   const locale = raw as Locale;
-  const article = getArticle(locale, slug);
+
+  const article = await resolveArticle(locale, slug);
   if (!article) notFound();
 
   const t = copy[locale];
@@ -85,9 +175,13 @@ export default async function ArticlePage({ params }: Props) {
   const takeaway = content.sequence.find((b) => b.type === "key_takeaway");
   const body = content.sequence.find((b) => b.type === "body_blocks");
   const conversion = content.sequence.find((b) => b.type === "conversion_block");
+  const ctaProduct =
+    conversion && conversion.type === "conversion_block" && conversion.product !== "none"
+      ? conversion.product
+      : null;
   const toc = extractToc(content);
-  const related = getRelated(article, 3);
-  const other = getTranslation(article, locale === "en" ? "fr" : "en");
+  const related = await resolveRelated(article, locale);
+  const other = await resolveTranslation(article, locale === "en" ? "fr" : "en");
 
   return (
     <>
@@ -96,9 +190,7 @@ export default async function ArticlePage({ params }: Props) {
           className="border-b border-[var(--border)] bg-[var(--surface-1)] px-4 py-2 text-sm text-[var(--text-secondary)]"
           role="status"
         >
-          {locale === "en"
-            ? "This article is not yet available in French."
-            : "Cet article n'est pas encore disponible en anglais."}
+          {locale === "en" ? t.missingLang : t.missingLangFr}
         </div>
       )}
 
@@ -137,14 +229,14 @@ export default async function ArticlePage({ params }: Props) {
                   <span>
                     {t.published}{" "}
                     <time dateTime={hero.publishedAt}>
-                      {format(new Date(hero.publishedAt), "dd MMM yyyy")}
+                      {formatLocalizedDate(hero.publishedAt, locale)}
                     </time>
                   </span>
                   {hero.updatedAt && (
                     <span>
                       {t.updated}{" "}
                       <time dateTime={hero.updatedAt}>
-                        {format(new Date(hero.updatedAt), "dd MMM yyyy")}
+                        {formatLocalizedDate(hero.updatedAt, locale)}
                       </time>
                     </span>
                   )}
@@ -192,7 +284,20 @@ export default async function ArticlePage({ params }: Props) {
                   <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-prose">
                     {conversion.body}
                   </p>
-                  <Button href={conversion.ctaHref} shimmer size="lg">
+                  <Button
+                    href={conversion.ctaHref}
+                    shimmer
+                    size="lg"
+                    onClick={() =>
+                      ctaProduct
+                        ? captureCtaClick(ctaProduct, {
+                            article_slug: article.slug,
+                            article_locale: locale,
+                            cta_label: conversion.ctaLabel,
+                          })
+                        : undefined
+                    }
+                  >
                     {conversion.ctaLabel}
                   </Button>
                 </aside>

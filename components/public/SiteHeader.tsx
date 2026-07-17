@@ -4,8 +4,8 @@ import type { Locale } from "@/lib/locale/resolve";
 import Link from "next/link";
 
 const copy = {
-  en: { brand: "Forge-Blog", search: "Search", admin: "Editorial" },
-  fr: { brand: "Forge-Blog", search: "Rechercher", admin: "Éditorial" },
+  en: { brand: "NainoForge", search: "Search", admin: "Editorial" },
+  fr: { brand: "NainoForge", search: "Rechercher", admin: "Éditorial" },
 };
 
 type Props = {

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "prismjs/themes/prism-tomorrow.css";
 
 /* ---------------------------------------------------------------------------
    Forge-Blog design tokens (section 1)
@@ -18,6 +19,8 @@
   --accent: #6d28d9;
   --accent-hover: #5b21b6;
   --accent-active: #4c1d95;
+  --green-soft: #f0fdf4;
+  --amber-soft: #fffbeb;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
   color-scheme: light;
 }
@@ -34,6 +37,8 @@
   --accent: #8b5cf6;
   --accent-hover: #a78bfa;
   --accent-active: #7c3aed;
+  --green-soft: #052e16;
+  --amber-soft: #1c1305;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
@@ -51,6 +56,8 @@
     --accent: #8b5cf6;
     --accent-hover: #a78bfa;
     --accent-active: #7c3aed;
+    --green-soft: #052e16;
+    --amber-soft: #1c1305;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
     color-scheme: dark;
   }
@@ -216,3 +223,49 @@ body {
 .react-flow__attribution {
   display: none;
 }
+
+/* PrismJS neutral overrides (section 1.1: neutrals only, no violet in base) */
+code[class*="language-"],
+pre[class*="language-"] {
+  background: var(--surface-2) !important;
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata { color: var(--text-muted); font-style: normal; }
+.token.punctuation { color: var(--text-secondary); }
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted { color: var(--text-primary); }
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted { color: #166534; }
+[data-theme="dark"] .token.selector,
+[data-theme="dark"] .token.attr-name,
+[data-theme="dark"] .token.string,
+[data-theme="dark"] .token.char,
+[data-theme="dark"] .token.builtin,
+[data-theme="dark"] .token.inserted { color: #86efac; }
+.token.operator,
+.token.entity,
+.token.url { color: var(--text-secondary); }
+.token.atrule,
+.token.attr-value,
+.token.keyword { color: #0f766e; }
+[data-theme="dark"] .token.atrule,
+[data-theme="dark"] .token.attr-value,
+[data-theme="dark"] .token.keyword { color: #2dd4bf; }
+.token.function { color: #92400e; }
+[data-theme="dark"] .token.function { color: #fcd34d; }
+.token.regex,
+.token.important,
+.token.variable { color: var(--text-primary); }
