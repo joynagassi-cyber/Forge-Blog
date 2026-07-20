@@ -25,10 +25,16 @@ import { notFound } from "next/navigation";
 import {
   articleSchema,
   breadcrumbSchema,
+  authorPersonSchema,
   jsonLdString,
 } from "@/lib/seo/structured-data";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
+
+const AUTHOR_SAME_AS = [
+  "https://nainoforge.com",
+  "https://scyforge.com",
+];
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -198,12 +204,13 @@ export default async function ArticlePage({ params }: Props) {
   const articleUrl = `${SITE_URL}/${locale}/article/${slug}`;
   const heroMeta = content.sequence.find((b) => b.type === "hero_meta");
   const ldScripts = jsonLdString([
+    authorPersonSchema("Forge Editorial", AUTHOR_SAME_AS),
     articleSchema({
       headline: article.title,
       description: article.excerpt,
       author: article.author,
       datePublished: article.published_at,
-      dateModified: article.updated_at ?? undefined,
+      dateModified: article.updated_at ?? article.published_at,
       imageUrl: article.cover_image_url ?? undefined,
       imageAlt: article.cover_image_alt ?? undefined,
       url: articleUrl,
