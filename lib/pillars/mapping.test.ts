@@ -5,14 +5,10 @@ import {
 } from "./mapping";
 
 describe("resolveProductForPillar", () => {
-  it("maps retention pillars to nainoforge", () => {
-    expect(resolveProductForPillar("retention-memory")).toBe("nainoforge");
-    expect(resolveProductForPillar("fsrs-algorithms")).toBe("nainoforge");
-  });
-
-  it("maps SOC pillars to scyforge", () => {
-    expect(resolveProductForPillar("soc-onboarding")).toBe("scyforge");
-    expect(resolveProductForPillar("ops-cyber")).toBe("scyforge");
+  it("returns none for all remaining pillars (product-neutral)", () => {
+    expect(resolveProductForPillar("retention-memory")).toBe("none");
+    expect(resolveProductForPillar("fsrs-algorithms")).toBe("none");
+    expect(resolveProductForPillar("active-learning")).toBe("none");
   });
 
   it("returns none for unknown pillar", () => {
@@ -27,9 +23,9 @@ describe("conversionCopy", () => {
     expect(c.ctaHref).toContain("nainoforge");
   });
 
-  it("returns SCYForge demo CTA in French", () => {
-    const c = conversionCopy("scyforge", "fr");
-    expect(c.ctaLabel).toMatch(/SCYForge/i);
-    expect(c.headline.length).toBeGreaterThan(0);
+  it("returns empty CTA for none product", () => {
+    const c = conversionCopy("none", "en");
+    expect(c.ctaLabel).toBe("");
+    expect(c.ctaHref).toBe("#");
   });
 });

@@ -1,4 +1,3 @@
-import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
 import { getPublishedArticles } from "@/lib/supabase/queries";
 import type { Locale } from "@/lib/locale/resolve";
 
@@ -13,11 +12,7 @@ async function getArticles(locale: Locale) {
       translation_group_id: a.translation_group_id,
     }));
   }
-  return DEMO_ARTICLES.filter((a) => a.locale === locale).map((a) => ({
-    slug: a.slug,
-    updatedAt: a.updated_at ?? a.published_at,
-    translation_group_id: a.translation_group_id,
-  }));
+  return [];
 }
 
 function escapeXml(s: string): string {

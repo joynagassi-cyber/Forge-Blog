@@ -1,15 +1,11 @@
 import {
   getAdminArticles,
 } from "@/lib/supabase/queries";
-import {
-  DEMO_ARTICLES,
-} from "@/lib/content/demo-articles";
 import Link from "next/link";
 import { ArticlesTable } from "@/components/admin/ArticlesTable";
 import type { ArticleRow } from "@/components/admin/ArticlesTable";
 
 export default async function ArticlesTablePage() {
-  // Supabase-first, demo fallback
   const liveRows = await getAdminArticles();
   const useLive = liveRows !== null && liveRows.length > 0;
 
@@ -28,20 +24,7 @@ export default async function ArticlesTablePage() {
         published_at: r.published_at,
         last_updated_at: r.last_updated_at,
       }))
-    : DEMO_ARTICLES.map((a) => ({
-        id: a.id,
-        title: a.title,
-        locale: a.locale,
-        translation_group_id: a.translation_group_id,
-        pillar_slug: a.pillar_slug,
-        status: "published" as const,
-        author: a.author,
-        read_time_minutes: a.read_time_minutes,
-        cover_image_url: null,
-        cover_image_alt: null,
-        published_at: a.published_at,
-        last_updated_at: a.updated_at,
-      }));
+    : [];
 
   // Build translation coverage map (group_id → locales present)
   const groupLocales = new Map<string, Set<string>>();
@@ -61,7 +44,7 @@ export default async function ArticlesTablePage() {
             {useLive ? (
               <span className="ml-1 status-published">Live data</span>
             ) : (
-              <span className="ml-1 status-attention">Demo data — connect Supabase</span>
+              <span className="ml-1 status-attention">No articles yet — connect Supabase</span>
             )}
           </p>
         </div>

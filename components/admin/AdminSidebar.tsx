@@ -125,6 +125,12 @@ export function AdminSidebar() {
           >
             ← Public blog
           </Link>
+          <Link
+            href="/auth/logout"
+            className="block text-xs text-[var(--text-muted)] hover:text-red-500"
+          >
+            Sign out
+          </Link>
         </div>
       </aside>
     </>

@@ -184,7 +184,12 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXEC
 
 DROP TRIGGER IF EXISTS articles_revision_trigger ON public.articles;
 CREATE TRIGGER articles_revision_trigger
-  AFTER INSERT OR UPDATE OF content, title, status ON public.articles
+  AFTER INSERT ON public.articles
+  FOR EACH ROW EXECUTE FUNCTION public.record_article_revision();
+
+DROP TRIGGER IF EXISTS articles_revision_update_trigger ON public.articles;
+CREATE TRIGGER articles_revision_update_trigger
+  AFTER UPDATE OF content, title, status ON public.articles
   FOR EACH ROW WHEN (OLD.content IS DISTINCT FROM NEW.content OR OLD.title IS DISTINCT FROM NEW.title OR OLD.status IS DISTINCT FROM NEW.status)
   EXECUTE FUNCTION public.record_article_revision();
 

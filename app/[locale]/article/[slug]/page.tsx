@@ -9,12 +9,7 @@ import {
 } from "@/components/shared/PostHogProvider";
 import { extractToc } from "@/lib/blocks/validate";
 import {
-  DEMO_ARTICLES,
-  getArticle as getDemoArticle,
-} from "@/lib/content/demo-articles";
-import {
   fromArticleRow,
-  fromDemoArticle,
   type PublicArticle,
 } from "@/lib/content/public-article";
 import { formatLocalizedDate } from "@/lib/locale/format";
@@ -49,9 +44,7 @@ async function resolveArticle(
 ): Promise<PublicArticle | null> {
   const row = await getPublishedArticle(locale, slug);
   if (row) return fromArticleRow(row);
-
-  const demo = getDemoArticle(locale, slug);
-  return demo ? fromDemoArticle(demo) : null;
+  return null;
 }
 
 async function resolveTranslation(
@@ -63,14 +56,7 @@ async function resolveTranslation(
     targetLocale
   );
   if (row) return fromArticleRow(row);
-
-  // Demo fallback
-  const demo = DEMO_ARTICLES.find(
-    (a) =>
-      a.translation_group_id === article.translation_group_id &&
-      a.locale === targetLocale
-  );
-  return demo ? fromDemoArticle(demo) : null;
+  return null;
 }
 
 async function resolveRelated(
@@ -84,15 +70,7 @@ async function resolveRelated(
     3
   );
   if (rows.length > 0) return rows.map(fromArticleRow);
-
-  // Demo fallback
-  const demo = DEMO_ARTICLES.filter(
-    (a) =>
-      a.locale === locale &&
-      a.id !== article.id &&
-      a.pillar_slug === article.pillar_slug
-  ).slice(0, 3);
-  return demo.map(fromDemoArticle);
+  return [];
 }
 
 // ---------------------------------------------------------------------------

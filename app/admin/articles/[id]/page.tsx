@@ -1,5 +1,4 @@
 import { validateArticleContent } from "@/lib/blocks/validate";
-import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
 import { getAdminArticle, updateArticleContent } from "@/lib/supabase/queries";
 import type { ArticleContent } from "@/lib/blocks/types";
 import Link from "next/link";
@@ -20,19 +19,16 @@ export default async function ArticleEditorPage({
   const { id } = await params;
 
   const liveArticle = await getAdminArticle(id);
-  const demoArticle = liveArticle ? null : DEMO_ARTICLES.find((a) => a.id === id);
+  if (!liveArticle) notFound();
 
-  if (!liveArticle && !demoArticle) notFound();
-
-  const title = liveArticle?.title ?? liveArticle?.working_title ?? demoArticle!.title;
-  const locale = liveArticle?.locale ?? demoArticle!.locale;
-  const pillarSlug = liveArticle?.pillar_slug ?? demoArticle!.pillar_slug;
-  const author = liveArticle?.author_name ?? demoArticle!.author;
-  const readTime = liveArticle?.read_time_minutes ?? demoArticle!.read_time_minutes;
-  const status = liveArticle?.status ?? "published";
-  const slug = liveArticle?.slug ?? demoArticle!.slug;
-  const content = liveArticle?.content ?? demoArticle!.content;
-  const isLive = liveArticle !== null;
+  const title = liveArticle.title ?? liveArticle.working_title;
+  const locale = liveArticle.locale;
+  const pillarSlug = liveArticle.pillar_slug ?? "";
+  const author = liveArticle.author_name ?? "—";
+  const readTime = liveArticle.read_time_minutes;
+  const status = liveArticle.status;
+  const slug = liveArticle.slug;
+  const content = liveArticle.content;
 
   const issues = validateArticleContent(content);
   const errors = issues.filter((i) => i.severity === "error");
@@ -44,13 +40,10 @@ export default async function ArticleEditorPage({
         <div>
           <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
             [ARTICLE] · {locale.toUpperCase()} · {status}
-            {!isLive && (
-              <span className="ml-2 status-attention">(demo)</span>
-            )}
           </p>
           <h1 className="text-2xl font-semibold mt-1">{title}</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Edit scaffold JSON · changes persist on Save
+            Edit scaffold JSON — changes persist on Save
           </p>
         </div>
         <Link
@@ -116,45 +109,27 @@ export default async function ArticleEditorPage({
           seo_aeo_geo_audit. Each call requires an active provider in Settings.
           Status never advances past In review without human approval.
         </p>
-        {isLive ? (
-          <div className="flex flex-wrap gap-2">
-            {[
-              { label: "Generate brief", task: "ai-brief-generation" },
-              { label: "Generate draft", task: "ai-draft-generation" },
-              { label: "Run SEO/AEO/GEO audit", task: "ai-seo-aeo-geo-audit" },
-            ].map(({ label, task }) => (
-              <form
-                key={task}
-                method="POST"
-                action={`/api/admin/ai/${task}`}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: "Generate brief", task: "ai-brief-generation" },
+            { label: "Generate draft", task: "ai-draft-generation" },
+            { label: "Run SEO/AEO/GEO audit", task: "ai-seo-aeo-geo-audit" },
+          ].map(({ label, task }) => (
+            <form
+              key={task}
+              method="POST"
+              action={`/api/admin/ai/${task}`}
+            >
+              <input type="hidden" name="article_id" value={id} />
+              <button
+                type="submit"
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-2)] cursor-pointer"
               >
-                <input type="hidden" name="article_id" value={id} />
-                <button
-                  type="submit"
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-2)] cursor-pointer"
-                >
-                  {label}
-                </button>
-              </form>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {["Generate brief", "Generate draft", "Run SEO/AEO/GEO audit"].map(
-              (label) => (
-                <button
-                  key={label}
-                  type="button"
-                  disabled
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-muted)]"
-                  title="Connect Supabase and configure an AI provider first"
-                >
-                  {label}
-                </button>
-              )
-            )}
-          </div>
-        )}
+                {label}
+              </button>
+            </form>
+          ))}
+        </div>
       </section>
 
       {/* Inline editor */}
@@ -163,7 +138,7 @@ export default async function ArticleEditorPage({
         <ArticleEditorClient
           id={id}
           initial={content}
-          isLive={isLive}
+          isLive={true}
           locale={locale}
           slug={slug}
           onSave={(content) => saveContent(id, content)}

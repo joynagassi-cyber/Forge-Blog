@@ -1,10 +1,8 @@
 import { getAdminArticles } from "@/lib/supabase/queries";
-import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
 import { EditorialCalendar } from "@/components/admin/EditorialCalendar";
 import type { CalendarArticle } from "@/components/admin/EditorialCalendar";
 
 export default async function CalendarPage() {
-  // Supabase-first, demo fallback
   const liveRows = await getAdminArticles();
   const useLive = liveRows !== null && liveRows.length > 0;
 
@@ -19,15 +17,7 @@ export default async function CalendarPage() {
         published_at: r.published_at,
         cover_image_url: r.cover_image_url,
       }))
-    : DEMO_ARTICLES.map((a) => ({
-        id: a.id,
-        title: a.title,
-        locale: a.locale,
-        status: "published" as const,
-        pillar_slug: a.pillar_slug,
-        scheduled_at: null, // demo articles have no scheduled dates
-        published_at: a.published_at,
-      }));
+    : [];
 
   // Stats for the period
   const totalPublished = articles.filter((a) => a.status === "published").length;
@@ -41,7 +31,7 @@ export default async function CalendarPage() {
         <p className="text-sm text-[var(--text-secondary)] mt-1">
           Planned, in-progress, and published articles across the content pipeline
           {!useLive && (
-            <span className="ml-2 status-attention">· Demo data — connect Supabase</span>
+            <span className="ml-2 status-attention">· No articles yet — connect Supabase</span>
           )}
         </p>
       </div>

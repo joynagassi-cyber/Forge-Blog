@@ -1,5 +1,4 @@
 import { getAdminArticles } from "@/lib/supabase/queries";
-import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
 import Link from "next/link";
 
 export default async function ReviewsPage() {
@@ -14,13 +13,7 @@ export default async function ReviewsPage() {
         status: r.status,
         pillar_slug: r.pillar_slug ?? "",
       }))
-    : DEMO_ARTICLES.map((a) => ({
-        id: a.id,
-        title: a.title,
-        locale: a.locale,
-        status: "published",
-        pillar_slug: a.pillar_slug,
-      }));
+    : [];
 
   const inReview = rows.filter((r) => r.status === "in_review");
   const changesRequested = rows.filter((r) => r.status === "changes_requested");
@@ -34,7 +27,7 @@ export default async function ReviewsPage() {
         <p className="text-sm text-[var(--text-secondary)] mt-1">
           Articles in review pipeline
           {!useLive && (
-            <span className="ml-2 status-attention">· Demo data</span>
+            <span className="ml-2 status-attention">· No articles yet</span>
           )}
         </p>
       </div>

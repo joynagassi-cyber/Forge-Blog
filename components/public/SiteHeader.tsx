@@ -5,8 +5,8 @@ import type { Locale } from "@/lib/locale/resolve";
 import Link from "next/link";
 
 const copy = {
-  en: { search: "Search", admin: "Editorial" },
-  fr: { search: "Rechercher", admin: "Éditorial" },
+  en: { search: "Search" },
+  fr: { search: "Rechercher" },
 };
 
 type Props = {
@@ -32,12 +32,6 @@ export function SiteHeader({ locale }: Props) {
           </Link>
           <LanguageSwitcher locale={locale} />
           <ThemeToggle />
-          <Link
-            href="/admin"
-            className="text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-          >
-            {t.admin}
-          </Link>
         </nav>
       </div>
     </header>

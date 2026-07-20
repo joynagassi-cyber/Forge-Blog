@@ -7,7 +7,6 @@
 import type { ArticleContent } from "@/lib/blocks/types";
 import type { Locale } from "@/lib/locale/resolve";
 import type { ArticleRow } from "@/lib/supabase/queries";
-import type { DemoArticle } from "./demo-articles";
 
 export type PublicArticle = {
   id: string;
@@ -46,29 +45,6 @@ function deterministicGradient(seed: string): string {
     h = (h * 31 + seed.charCodeAt(i)) & 0xffff;
   }
   return GRADIENTS[h % GRADIENTS.length];
-}
-
-export function fromDemoArticle(a: DemoArticle): PublicArticle {
-  return {
-    id: a.id,
-    slug: a.slug,
-    locale: a.locale,
-    translation_group_id: a.translation_group_id,
-    title: a.title,
-    dek: a.dek,
-    excerpt: a.excerpt,
-    pillar_slug: a.pillar_slug,
-    author: a.author,
-    author_bio: a.author_bio,
-    published_at: a.published_at,
-    updated_at: a.updated_at ?? null,
-    read_time_minutes: a.read_time_minutes,
-    cover_gradient: a.cover_gradient,
-    cover_image_url: null,
-    cover_image_alt: null,
-    featured: a.featured ?? false,
-    content: a.content,
-  };
 }
 
 export function fromArticleRow(row: ArticleRow): PublicArticle {

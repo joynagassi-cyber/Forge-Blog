@@ -4,8 +4,7 @@
  */
 
 import type { Locale } from "@/lib/locale/resolve";
-import { DEMO_ARTICLES } from "./demo-articles";
-import { fromArticleRow, fromDemoArticle, type PublicArticle } from "./public-article";
+import { fromArticleRow, type PublicArticle } from "./public-article";
 import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
@@ -21,7 +20,7 @@ export type SearchResult = {
 };
 
 // ---------------------------------------------------------------------------
-// Search function (Supabase-first, demo fallback)
+// Search function (Supabase-first only)
 // ---------------------------------------------------------------------------
 
 export async function searchArticles(
@@ -34,8 +33,7 @@ export async function searchArticles(
   const live = await searchSupabase(query, locale);
   if (live !== null) return live;
 
-  // Demo fallback
-  return searchDemo(query, locale);
+  return [];
 }
 
 // ---------------------------------------------------------------------------
@@ -95,58 +93,6 @@ async function searchSupabase(
       snippet: snippet.text,
     };
   });
-}
-
-// ---------------------------------------------------------------------------
-// Demo fallback (client-side filter)
-// ---------------------------------------------------------------------------
-
-function searchDemo(query: string, locale: Locale): SearchResult[] {
-  const q = query.toLowerCase().trim();
-  const results: SearchResult[] = [];
-
-  for (const demo of DEMO_ARTICLES) {
-    if (demo.locale !== locale) continue;
-
-    const title = demo.title.toLowerCase();
-    const excerpt = demo.excerpt.toLowerCase();
-    const contentText = demo.content.sequence
-      .filter((b) => b.type === "body_blocks")
-      .flatMap((b) => (b.type === "body_blocks" ? b.blocks : []))
-      .map((blk) => {
-        if ("spans" in blk) return (blk as any).spans?.map((s: any) => s.text).join(" ") ?? "";
-        if ("text" in blk) return blk.text ?? "";
-        if ("code" in blk) return blk.code ?? "";
-        return "";
-      })
-      .join(" ")
-      .toLowerCase();
-
-    const matchTitle = title.includes(q);
-    const matchExcerpt = excerpt.includes(q);
-    const matchContent = contentText.includes(q);
-
-    if (!matchTitle && !matchExcerpt && !matchContent) continue;
-
-    const matchField = matchTitle ? "title" : matchExcerpt ? "excerpt" : "content";
-
-    // Build snippet
-    let snippet = excerpt;
-    if (matchField === "content") {
-      const idx = contentText.indexOf(q);
-      const start = Math.max(0, idx - 60);
-      const end = Math.min(contentText.length, idx + q.length + 60);
-      snippet = (start > 0 ? "…" : "") + contentText.slice(start, end) + (end < contentText.length ? "…" : "");
-    }
-
-    results.push({
-      article: fromDemoArticle(demo),
-      matchField,
-      snippet,
-    });
-  }
-
-  return results.slice(0, 20);
 }
 
 // ---------------------------------------------------------------------------

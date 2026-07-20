@@ -3,9 +3,7 @@
  * Returns an RSS 2.0 feed of published articles.
  */
 
-import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
-import { fromDemoArticle, fromArticleRow } from "@/lib/content/public-article";
-import type { PublicArticle } from "@/lib/content/public-article";
+import { fromArticleRow, type PublicArticle } from "@/lib/content/public-article";
 import type { Locale } from "@/lib/locale/resolve";
 import { getPublishedArticles } from "@/lib/supabase/queries";
 import { NextRequest } from "next/server";
@@ -17,7 +15,7 @@ async function fetchArticles(locale: Locale): Promise<PublicArticle[]> {
   if (live && live.length > 0) {
     return live.map(fromArticleRow);
   }
-  return DEMO_ARTICLES.filter((a) => a.locale === locale).map(fromDemoArticle);
+  return [];
 }
 
 function escapeCdata(s: string): string {
@@ -29,8 +27,8 @@ export async function GET(req: NextRequest) {
   const locale = (localeRaw === "fr" ? "fr" : "en") as Locale;
   const title = "Forge-Blog — Articles";
   const desc = locale === "fr"
-    ? "Articles sur les sciences cognitives et le SOC opérationnel, par les équipes de NainoForge et SCYForge"
-    : "Articles on cognitive science and operational SOC, by the teams at NainoForge and SCYForge";
+    ? "Articles sur les sciences cognitives et l'apprentissage"
+    : "Articles on cognitive science and learning";
 
   const articles = await fetchArticles(locale);
 

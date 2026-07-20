@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 /**
  * Server-side auth guard for the admin area.
  * Reads the Supabase session from cookies on the server (section 11, 14.5).
- * Redirects to /en with ?admin=login so the client can show a sign-in flow.
+ * Redirects to /auth/login with ?redirect=/admin if no session.
  */
 export default async function AdminAuthGate({
   children,
@@ -23,7 +23,7 @@ export default async function AdminAuthGate({
   } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect("/en?admin=login");
+    redirect("/auth/login?redirect=/admin");
   }
 
   return <>{children}</>;

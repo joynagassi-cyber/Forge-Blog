@@ -1,8 +1,4 @@
 import {
-  DEMO_ARTICLES,
-  getTranslationCoverage,
-} from "@/lib/content/demo-articles";
-import {
   getAdminArticles,
   getAllArticleScores,
 } from "@/lib/supabase/queries";
@@ -35,19 +31,10 @@ export default async function AdminOverviewPage() {
         pillar_slug: r.pillar_slug ?? "",
         published_at: r.published_at,
       }))
-    : DEMO_ARTICLES.map((a) => ({
-        id: a.id,
-        title: a.title,
-        locale: a.locale,
-        status: "published",
-        content: a.content,
-        pillar_slug: a.pillar_slug,
-        published_at: a.published_at,
-      }));
+    : [];
 
   const total = articles.length;
   const published = articles.filter((a) => a.status === "published").length;
-  const translationCoverage = getTranslationCoverage();
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -59,7 +46,7 @@ export default async function AdminOverviewPage() {
           <p className="text-sm text-[var(--text-secondary)] mt-1">
             What changed · What needs attention · What is performing · What should happen next
             {!useLive && (
-              <span className="ml-2 status-attention">· Demo data</span>
+              <span className="ml-2 status-attention">· No articles yet — connect Supabase</span>
             )}
           </p>
         </div>
@@ -78,11 +65,11 @@ export default async function AdminOverviewPage() {
           { label: "Published", value: published },
           {
             label: "Complete translations",
-            value: translationCoverage.completeGroups,
+            value: 0,
           },
           {
             label: "Missing translations",
-            value: translationCoverage.missingEn + translationCoverage.missingFr,
+            value: 0,
           },
         ].map((card) => (
           <div
@@ -121,7 +108,7 @@ export default async function AdminOverviewPage() {
             <li>Connect Supabase (URL + anon key in .env.local)</li>
             <li>Run migrations in supabase/migrations</li>
             <li>Configure AI providers under Settings</li>
-            <li>Translate the remaining EN-only demo articles to FR</li>
+            <li>Write your first article and publish it</li>
           </ol>
         </div>
       </section>

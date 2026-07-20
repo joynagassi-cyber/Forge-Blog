@@ -1,5 +1,4 @@
 import { getAdminArticles } from "@/lib/supabase/queries";
-import { DEMO_ARTICLES } from "@/lib/content/demo-articles";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import type { AnalyticsArticle } from "@/components/admin/AnalyticsDashboard";
 
@@ -18,16 +17,7 @@ export default async function AnalyticsPage() {
         read_time_minutes: r.read_time_minutes,
         content: r.content,
       }))
-    : DEMO_ARTICLES.map((a) => ({
-        id: a.id,
-        title: a.title,
-        locale: a.locale,
-        status: "published",
-        pillar_slug: a.pillar_slug,
-        published_at: a.published_at,
-        read_time_minutes: a.read_time_minutes,
-        content: a.content,
-      }));
+    : [];
 
   return (
     <div className="space-y-6">
@@ -36,7 +26,7 @@ export default async function AnalyticsPage() {
         <p className="text-sm text-[var(--text-secondary)] mt-1">
           Views, reads, CTA conversions, and engagement metrics
           {!useLive && (
-            <span className="ml-2 status-attention">· Demo data — connect PostHog</span>
+            <span className="ml-2 status-attention">· No articles yet — connect PostHog</span>
           )}
         </p>
       </div>
