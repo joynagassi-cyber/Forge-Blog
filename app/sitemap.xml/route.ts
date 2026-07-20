@@ -45,10 +45,14 @@ export async function GET(): Promise<Response> {
     translationMap.set(a.translation_group_id, existing);
   }
 
-  // Static pages
-  const staticLocales = [
-    { locale: "en", href: `${SITE_URL}/en`, lastmod: new Date().toISOString().slice(0, 10) },
-    { locale: "fr", href: `${SITE_URL}/fr`, lastmod: new Date().toISOString().slice(0, 10) },
+  // Static pages (home + about + scyforge per locale)
+  const staticPages = [
+    { locale: "en" as const, path: "", lastmod: new Date().toISOString().slice(0, 10), priority: "1.0" },
+    { locale: "fr" as const, path: "", lastmod: new Date().toISOString().slice(0, 10), priority: "1.0" },
+    { locale: "en" as const, path: "/a-propos", lastmod: new Date().toISOString().slice(0, 10), priority: "0.7" },
+    { locale: "fr" as const, path: "/a-propos", lastmod: new Date().toISOString().slice(0, 10), priority: "0.7" },
+    { locale: "en" as const, path: "/scyforge", lastmod: new Date().toISOString().slice(0, 10), priority: "0.7" },
+    { locale: "fr" as const, path: "/scyforge", lastmod: new Date().toISOString().slice(0, 10), priority: "0.7" },
   ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -56,19 +60,22 @@ export async function GET(): Promise<Response> {
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 `;
 
-  // Home pages with hreflang alternates
-  for (const staticPage of staticLocales) {
-    const alternates = staticLocales
-      .map((alt) => `      <xhtml:link rel="alternate" hreflang="${alt.locale}" href="${escapeXml(alt.href)}"/>`)
+  // Home and static pages with hreflang alternates
+  for (const staticPage of staticPages) {
+    const href = `${SITE_URL}/${staticPage.locale}${staticPage.path}`;
+    // Find all alternates for this page path (all locales)
+    const pathAlternates = staticPages
+      .filter((sp) => sp.path === staticPage.path)
+      .map((alt) => `      <xhtml:link rel="alternate" hreflang="${alt.locale}" href="${escapeXml(`${SITE_URL}/${alt.locale}${alt.path}`)}"/>`)
       .join("\n");
 
     xml += `  <url>
-    <loc>${escapeXml(staticPage.href)}</loc>
+    <loc>${escapeXml(href)}</loc>
     <lastmod>${staticPage.lastmod}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-${alternates}
-    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(`${SITE_URL}/en`)}"/>
+    <changefreq>${staticPage.priority === "1.0" ? "daily" : "monthly"}</changefreq>
+    <priority>${staticPage.priority}</priority>
+${pathAlternates}
+    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(`${SITE_URL}/en${staticPage.path}`)}"/>
   </url>
 `;
   }
