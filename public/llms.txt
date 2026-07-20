@@ -1,0 +1,29 @@
+# Forge-Blog
+
+Sciences cognitives, sans jargon. Articles sur la mémoire, l'apprentissage et la cognition — rédigés pour être testés, pas juste lus.
+
+Cognitive science, without the jargon. Articles on memory, learning, and cognition — written to be tested, not just read.
+
+## Pages principales
+
+### Accueil / Home
+- /fr — Blog de sciences cognitives en français. Articles sur la mémoire, l'apprentissage et la cognition.
+- /en — Cognitive science blog in English. Articles on memory, learning, and cognition.
+
+### Articles / Articles
+- /fr/article/courbe-de-loubli — La courbe de l'oubli : combien vous perdez réellement, et à quelle vitesse. Plongée dans les découvertes d'Ebbinghaus et protocole de mesure personnelle.
+- /en/article/courbe-de-loubli — The Forgetting Curve: How Much You Actually Lose, and How Fast. Deep dive into Ebbinghaus's findings and a protocol to measure your own memory decay.
+
+### À propos / About
+- /fr/a-propos — À propos de Forge-Blog : mission, méthodologie, équipe.
+- /en/a-propos — About Forge-Blog: mission, methodology, and the team behind the writing.
+
+### SCYForge
+- /fr/scyforge — SCYForge : infrastructure de savoir organisationnel basée sur l'Arbre Sémantique. Liste d'attente.
+- /en/scyforge — SCYForge: organizational knowledge infrastructure based on the Semantic Tree thesis. Waitlist.
+
+## Méthodologie
+
+Chaque article est rédigé pour être testé. Nous partageons nos méthodes expérimentales, nos sources primaires, et nos résultats bruts. Notre approche s'appuie sur les travaux d'Ebbinghaus, Dunlosky, Roediger et Karpicke.
+
+Each article is written to be tested. We share our experimental methods, primary sources, and raw results. Our approach draws on Ebbinghaus, Dunlosky, Roediger, and Karpicke.
