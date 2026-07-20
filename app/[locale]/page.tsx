@@ -16,8 +16,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  websiteSchema,
-  organizationSchema,
+  siteGraphSchema,
   jsonLdString,
 } from "@/lib/seo/structured-data";
 
@@ -119,8 +118,7 @@ export default async function HomePage({ params }: Props) {
   // JSON-LD structured data
   const canonicalUrl = `${SITE_URL}/${locale}`;
   const ldScripts = jsonLdString([
-    organizationSchema(),
-    websiteSchema(locale),
+    siteGraphSchema(locale),
   ]);
 
   return (
