@@ -1,15 +1,9 @@
 import { validateArticleContent } from "@/lib/blocks/validate";
-import { getAdminArticle, updateArticleContent } from "@/lib/supabase/queries";
-import type { ArticleContent } from "@/lib/blocks/types";
+import { getAdminArticle } from "@/lib/supabase/queries";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArticleEditorClient } from "@/components/admin/ArticleEditorClient";
 import { ArticleScoreSummary } from "@/components/admin/ArticleScoreSummary";
-
-async function saveContent(articleId: string, content: ArticleContent) {
-  "use server";
-  return updateArticleContent(articleId, content);
-}
 
 export default async function ArticleEditorPage({
   params,
@@ -141,7 +135,6 @@ export default async function ArticleEditorPage({
           isLive={true}
           locale={locale}
           slug={slug}
-          onSave={(content) => saveContent(id, content)}
           initialSeo={{
             seo_title: liveArticle?.seo_title ?? "",
             meta_description: liveArticle?.meta_description ?? "",

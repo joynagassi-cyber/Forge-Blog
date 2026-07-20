@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PILLARS } from "@/lib/pillars/mapping";
 
@@ -20,21 +21,68 @@ const STATUSES = [
 const inputClass =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]";
 
-export default function NewArticlePage() {
-  const [saved, setSaved] = useState(false);
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
-  function onSubmit(e: React.FormEvent) {
+export default function NewArticlePage() {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+
+  const slugPreview = title ? slugify(title) : "";
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaved(true);
+    setSaving(true);
+    setError(null);
+
+    const form = e.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+
+    try {
+      const res = await fetch("/api/admin/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          working_title: formData.get("title"),
+          locale: formData.get("locale"),
+          pillar_slug: formData.get("pillar"),
+          status: formData.get("status"),
+        }),
+      });
+
+      const data = await res.json() as { ok?: boolean; article_id?: string; error?: string };
+
+      if (!res.ok) {
+        throw new Error(data.error ?? `Server error: ${res.status}`);
+      }
+
+      if (data.ok && data.article_id) {
+        router.push(`/admin/articles/${data.article_id}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Creation failed");
+      setSaving(false);
+    }
   }
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Define the idea</h1>
+        <h1 className="text-2xl font-semibold">Create article</h1>
         <p className="text-sm text-[var(--text-secondary)] mt-1">
-          Step 1 of the editorial workflow. Full draft requires brief first
-          unless explicitly requested.
+          Define the idea — the full editor opens after creation.
         </p>
       </div>
 
@@ -43,9 +91,16 @@ export default function NewArticlePage() {
           <input
             name="title"
             required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             className={inputClass}
-            placeholder="e.g. Courbe d'oubli for SOC onboarding"
+            placeholder="e.g. The Forgetting Curve: What You Lose and How Fast"
           />
+          {slugPreview && (
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              Slug: <code className="bg-[var(--surface-2)] px-1 rounded">{slugPreview}</code>
+            </p>
+          )}
         </Field>
 
         <div className="grid sm:grid-cols-2 gap-4">
@@ -55,17 +110,19 @@ export default function NewArticlePage() {
               <option value="fr">Français (fr)</option>
             </select>
           </Field>
-          <Field label="Target languages">
-            <select name="targets" className={inputClass} defaultValue="both">
-              <option value="en">en only</option>
-              <option value="fr">fr only</option>
-              <option value="both">en + fr</option>
+          <Field label="Status">
+            <select name="status" className={inputClass} defaultValue="idea">
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
           </Field>
         </div>
 
         <Field label="Pillar">
-          <select name="pillar" className={inputClass} required defaultValue="">
+          <select name="pillar" className={inputClass} defaultValue="">
             <option value="" disabled>
               Select pillar
             </option>
@@ -74,15 +131,6 @@ export default function NewArticlePage() {
                 {p.name_en} / {p.name_fr}
               </option>
             ))}
-          </select>
-        </Field>
-
-        <Field label="Target product">
-          <select name="product" className={inputClass} defaultValue="none">
-            <option value="nainoforge">NainoForge</option>
-            <option value="scyforge">SCYForge</option>
-            <option value="both">Both</option>
-            <option value="none">Neither</option>
           </select>
         </Field>
 
@@ -103,41 +151,19 @@ export default function NewArticlePage() {
           />
         </Field>
 
-        <Field label="Status">
-          <select name="status" className={inputClass} defaultValue="idea">
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {error && (
+          <p className="text-sm status-error" role="alert">{error}</p>
+        )}
 
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
-            className="rounded-md bg-[var(--accent)] text-white font-semibold px-4 py-2.5 text-sm btn-shimmer"
+            disabled={saving}
+            className="rounded-md bg-[var(--accent)] text-white font-semibold px-4 py-2.5 text-sm btn-shimmer disabled:opacity-50"
           >
-            Save idea
-          </button>
-          <button
-            type="button"
-            className="rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-medium"
-            onClick={() =>
-              alert(
-                "AI brief_generation requires a configured provider (admin settings). Human approval required before In review → Published."
-              )
-            }
-          >
-            Generate brief (AI)
+            {saving ? "Creating…" : "Create article"}
           </button>
         </div>
-
-        {saved && (
-          <p className="text-sm status-published" role="status">
-            Idea saved locally (demo). Connect Supabase to persist.
-          </p>
-        )}
       </form>
     </div>
   );

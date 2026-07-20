@@ -80,7 +80,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       type: "website",
       url: canonical,
-      title: fullTitle,
+      title: `${SITE_NAME} · ${t.eyebrow}`,
       description: t.sub,
       locale: raw === "fr" ? "fr_FR" : "en_US",
       alternateLocale: raw === "fr" ? "en_US" : "fr_FR",
@@ -88,7 +88,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: fullTitle,
+      title: `${SITE_NAME} · ${t.eyebrow}`,
       description: t.sub,
       site: "@forge_blog",
     },
