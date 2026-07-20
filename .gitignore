@@ -58,3 +58,6 @@ client_secret_*.json
 sh.exe.stackdump
 all-migrations-combined.sql
 supabase/.temp/
+
+# stray asset not used in code
+image-sable-qui-coule.jpg

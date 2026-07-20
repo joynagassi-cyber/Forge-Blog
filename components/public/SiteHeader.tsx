@@ -5,8 +5,8 @@ import type { Locale } from "@/lib/locale/resolve";
 import Link from "next/link";
 
 const copy = {
-  en: { search: "Search" },
-  fr: { search: "Rechercher" },
+  en: { articles: "Articles", about: "About" },
+  fr: { articles: "Articles", about: "À propos" },
 };
 
 type Props = {
@@ -23,12 +23,18 @@ export function SiteHeader({ locale }: Props) {
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between gap-4">
         <ForgeLogo locale={locale} />
 
-        <nav className="flex items-center gap-4" aria-label="Primary">
+        <nav className="flex items-center gap-5" aria-label="Primary">
           <Link
-            href={`/${locale}#search`}
-            className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] link-accent hidden sm:inline"
+            href={`/${locale}`}
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
           >
-            {t.search}
+            {t.articles}
+          </Link>
+          <Link
+            href={`/${locale}/a-propos`}
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+          >
+            {t.about}
           </Link>
           <LanguageSwitcher locale={locale} />
           <ThemeToggle />
