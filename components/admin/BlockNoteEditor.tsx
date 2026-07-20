@@ -108,6 +108,30 @@ export function BlockNoteEditor({ id, initial, onSave, onBlocksChange }: Props) 
             };
             break;
 
+          case "image":
+            newBlock = {
+              id: `img-${Date.now()}`,
+              type: "image",
+              props: {
+                url: content,
+                caption: "AI-generated image",
+                previewWidth: "full",
+              },
+              children: [],
+            };
+            break;
+
+          case "video":
+            newBlock = {
+              id: `vid-${Date.now()}`,
+              type: "paragraph",
+              props: {
+                text: `[Video: ${content}]`,
+              },
+              children: [],
+            };
+            break;
+
           default:
             // summary / rewrite / custom: insert as paragraph
             newBlock = {

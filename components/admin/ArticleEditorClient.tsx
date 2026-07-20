@@ -26,11 +26,19 @@ type Props = {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
 
 export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave, initialSeo }: Props) {
+  // Extract initial hero once for state initialization (before any hero-from-content derivation)
+  const initialHero = initial.sequence.find((b) => b.type === "hero_meta") as HeroMeta | undefined;
+
   const [content, setContent] = useState<ArticleContent>(initial);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [coverAlt, setCoverAlt] = useState<string>("");
+  const [coverImage, setCoverImage] = useState<string | null>(initialHero?.coverImageUrl ?? null);
+  const [coverAlt, setCoverAlt] = useState<string>(initialHero?.coverImageAlt ?? "");
+
+  // AI cover generation
+  const [coverAiPrompt, setCoverAiPrompt] = useState("");
+  const [coverAiGenerating, setCoverAiGenerating] = useState(false);
+  const [coverAiError, setCoverAiError] = useState<string | null>(null);
 
   // SEO metadata fields (persisted to dedicated DB columns via API)
   const [seoToggle, setSeoToggle] = useState(false);
@@ -39,7 +47,7 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave,
   const [seoCanonical, setSeoCanonical] = useState(initialSeo?.canonical_url ?? "");
   const [seoRobots, setSeoRobots] = useState(initialSeo?.robots ?? "index,follow");
 
-  // Sync SEO state when article changes (navigating between articles)
+  // Sync state when article changes (navigating between articles)
   const prevId = useRef(id);
   useEffect(() => {
     if (prevId.current !== id) {
@@ -48,6 +56,11 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave,
       setSeoDesc(initialSeo?.meta_description ?? "");
       setSeoCanonical(initialSeo?.canonical_url ?? "");
       setSeoRobots(initialSeo?.robots ?? "index,follow");
+      const nextHero = initial.sequence.find((b) => b.type === "hero_meta") as HeroMeta | undefined;
+      setCoverImage(nextHero?.coverImageUrl ?? null);
+      setCoverAlt(nextHero?.coverImageAlt ?? "");
+      setCoverAiPrompt("");
+      setCoverAiError(null);
     }
   }, [id, initialSeo]);
 
@@ -105,23 +118,49 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave,
   function removeCover() {
     setCoverImage(null);
     setCoverAlt("");
+    setCoverAiPrompt("");
+    setCoverAiError(null);
     setSaved(false);
+  }
+
+  async function aiGenerateCover() {
+    if (!coverAiPrompt.trim()) return;
+    setCoverAiGenerating(true);
+    setCoverAiError(null);
+    try {
+      const res = await fetch("/api/admin/ai/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: coverAiPrompt, size: "2K", ratio: "16:9" }),
+      });
+      const data = await res.json();
+      if (data.ok && data.url) {
+        setCoverImage(data.url);
+        setCoverAlt(data.alt);
+        setCoverAiPrompt("");
+      } else {
+        setCoverAiError(data.error ?? "Generation failed");
+      }
+    } catch (err) {
+      setCoverAiError(err instanceof Error ? err.message : "Generation failed");
+    } finally {
+      setCoverAiGenerating(false);
+    }
   }
 
   async function handleSave() {
     setSaving(true);
     try {
       // Build complete content with cover image in hero_meta
-      const contentWithCover: ArticleContent = coverImage
-        ? {
-            ...content,
-            sequence: content.sequence.map((b) =>
-              b.type === "hero_meta"
-                ? { ...b, coverImageUrl: coverImage, coverImageAlt: coverAlt }
-                : b
-            ),
-          }
-        : content;
+      // coverImage is always the source of truth (initialized from hero on load)
+      const contentWithCover: ArticleContent = {
+        ...content,
+        sequence: content.sequence.map((b) =>
+          b.type === "hero_meta"
+            ? { ...b, coverImageUrl: coverImage ?? undefined, coverImageAlt: coverAlt || undefined }
+            : b
+        ),
+      };
 
       // Build SEO payload (sent separately from content to dedicated DB columns)
       const seoPayload = {
@@ -161,40 +200,106 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave,
       {/* Cover image */}
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5 space-y-3">
         <h2 className="font-semibold text-sm uppercase tracking-wide text-[var(--text-muted)]">Cover image</h2>
-        {(coverImage || hero.coverImageUrl) ? (
+        {coverImage ? (
           <div className="space-y-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={coverImage || hero.coverImageUrl}
-              alt={coverAlt || hero.coverImageAlt || "Cover preview"}
+              src={coverImage}
+              alt={coverAlt || "Cover preview"}
               className="aspect-video w-full max-w-lg rounded-lg border border-[var(--border)] object-cover"
             />
             <div className="flex items-center gap-2">
               <label className="text-xs text-[var(--text-muted)]">
                 Alt text:
                 <input
-                  value={coverAlt || hero.coverImageAlt || ""}
+                  value={coverAlt || ""}
                   onChange={(e) => setCoverAlt(e.target.value)}
                   className="ml-2 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-xs"
                   placeholder="Describe the image"
                 />
               </label>
-              <button
-                type="button"
-                onClick={removeCover}
-                className="text-xs text-red-500 hover:underline ml-auto"
-              >
-                Remove
-              </button>
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={removeCover}
+                  className="text-xs text-[var(--accent)] hover:underline"
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  onClick={removeCover}
+                  className="text-xs text-red-500 hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
         ) : (
-          <ImageUpload
-            onUploaded={handleCoverUploaded}
-            prefix="covers/"
-            maxWidth={1920}
-            label="Upload cover image"
-          />
+          <div className="space-y-3">
+            {/* Upload option */}
+            <ImageUpload
+              onUploaded={handleCoverUploaded}
+              prefix="covers/"
+              maxWidth={1920}
+              label="Upload cover image"
+            />
+
+            {/* Divider */}
+            <div className="flex items-center gap-2">
+              <span className="flex-1 border-t border-[var(--border)]" />
+              <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">or</span>
+              <span className="flex-1 border-t border-[var(--border)]" />
+            </div>
+
+            {/* AI generation option */}
+            <div className="space-y-2">
+              <p className="text-xs text-[var(--text-muted)]">
+                Generate a cover illustration with AI:
+              </p>
+              <div className="flex gap-2">
+                <input
+                  value={coverAiPrompt}
+                  onChange={(e) => setCoverAiPrompt(e.target.value)}
+                  placeholder="e.g. A futuristic SOC analyst workspace with holographic screens"
+                  className="flex-1 rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm placeholder:text-[var(--text-muted)]/50"
+                  onKeyDown={(e) => { if (e.key === "Enter" && !coverAiGenerating) aiGenerateCover(); }}
+                />
+                <button
+                  type="button"
+                  onClick={aiGenerateCover}
+                  disabled={coverAiGenerating || !coverAiPrompt.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] text-white px-3 py-2 text-xs font-medium whitespace-nowrap disabled:opacity-50 transition-opacity"
+                >
+                  {coverAiGenerating ? (
+                    <>
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Generating…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                      </svg>
+                      Generate
+                    </>
+                  )}
+                </button>
+              </div>
+              {coverAiError && (
+                <p className="text-xs text-red-500" role="alert">{coverAiError}</p>
+              )}
+              {coverAiGenerating && (
+                <p className="text-[10px] text-[var(--text-muted)] animate-pulse">
+                  Generating cover with Agnes AI (agnes-image-2.1-flash)… This may take a few seconds.
+                </p>
+              )}
+              <p className="text-[10px] text-[var(--text-muted)]">
+                Powered by Agnes AI — describes a 16:9 cover illustration for your article
+              </p>
+            </div>
+          </div>
         )}
       </section>
 
@@ -365,11 +470,11 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave,
 
             {/* Social preview card */}
             <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)] overflow-hidden max-w-md">
-              {coverImage || hero.coverImageUrl ? (
+              {coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={coverImage || hero.coverImageUrl}
-                  alt={coverAlt || hero.coverImageAlt || ""}
+                  src={coverImage}
+                  alt={coverAlt || ""}
                   className="aspect-[2/1] w-full object-cover"
                 />
               ) : (

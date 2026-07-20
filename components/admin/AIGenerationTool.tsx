@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type AiMode = "equation" | "diagram" | "summary" | "rewrite" | "custom";
+export type AiMode = "equation" | "diagram" | "summary" | "rewrite" | "custom" | "image" | "video";
 
 type ModeConfig = {
   label: string;
   prompt: string;
   placeholder: string;
-  apiMode: string;     // maps to Edge Function mode parameter
+  apiMode: string;
   icon: string;
 };
 
@@ -52,6 +52,20 @@ const MODE_CONFIG: Record<AiMode, ModeConfig> = {
     apiMode: "custom",
     icon: "✧",
   },
+  image: {
+    label: "Generate image",
+    prompt: "Generate an image of: ",
+    placeholder: "e.g. a futuristic SOC analyst workspace, a brain with glowing neural pathways",
+    apiMode: "image",
+    icon: "🖼",
+  },
+  video: {
+    label: "Generate video",
+    prompt: "Generate a video of: ",
+    placeholder: "e.g. a 3D rotating brain, an animated neural network",
+    apiMode: "video",
+    icon: "🎬",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -71,22 +85,14 @@ const EQUATION_LIBRARY: Record<string, string> = {
   quadratic: "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
   "quadratic formula": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
   einstein: "E = mc^2",
-  "e=mc": "E = mc^2",
-  "e=mc^2": "E = mc^2",
   integral: "\\int_{a}^{b} f(x) \\, dx",
   "fourier transform": "\\hat{f}(\\xi) = \\int_{-\\infty}^{\\infty} f(x) e^{-2\\pi i x \\xi} \\, dx",
-  fourier: "\\hat{f}(\\xi) = \\int_{-\\infty}^{\\infty} f(x) e^{-2\\pi i x \\xi} \\, dx",
   "normal distribution": "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}\\left(\\frac{x-\\mu}{\\sigma}\\right)^2}",
-  gaussian: "f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}\\left(\\frac{x-\\mu}{\\sigma}\\right)^2}",
   derivative: "\\frac{df}{dx} = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}",
   "matrix multiplication": "C_{ij} = \\sum_{k=1}^{n} A_{ik} B_{kj}",
-  matrix: "C_{ij} = \\sum_{k=1}^{n} A_{ik} B_{kj}",
   "taylor series": "f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(a)}{n!} (x-a)^n",
-  taylor: "f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(a)}{n!} (x-a)^n",
   "bayes theorem": "P(A \\mid B) = \\frac{P(B \\mid A) \\, P(A)}{P(B)}",
-  bayes: "P(A \\mid B) = \\frac{P(B \\mid A) \\, P(A)}{P(B)}",
   entropy: "H(X) = -\\sum_{i=1}^{n} P(x_i) \\log P(x_i)",
-  "shannon entropy": "H(X) = -\\sum_{i=1}^{n} P(x_i) \\log P(x_i)",
 };
 
 const DIAGRAM_LIBRARY: [string, string][] = [
@@ -94,8 +100,7 @@ const DIAGRAM_LIBRARY: [string, string][] = [
   ["sequence", "sequenceDiagram;\n  participant User\n  participant App\n  participant API\n  User->>App: Click button;\n  App->>API: POST /data;\n  API-->>App: 200 OK;\n  App-->>User: Show result;"],
   ["class", "classDiagram;\n  class Entity {\n    +id: string\n    +createdAt: Date\n  }\n  class User {\n    +name: string\n    +email: string\n  }\n  Entity <|-- User;"],
   ["state", "stateDiagram-v2;\n  [*] --> Idle;\n  Idle --> Processing : start;\n  Processing --> Completed : success;\n  Processing --> Failed : error;\n  Failed --> Idle : retry;\n  Completed --> [*];"],
-  ["gantt", "gantt;\n  title Project Timeline;\n  dateFormat YYYY-MM-DD;\n  section Planning;\n  Research    :a1, 2024-01-01, 30d;\n  Design      :a2, after a1, 20d;\n  section Development;\n  Frontend    :a3, after a2, 45d;\n  Backend     :a4, after a2, 45d;"],
-  ["pie", 'pie;\n  title Distribution;\n  "Category A" : 40;\n  "Category B" : 25;\n  "Category C" : 20;\n  "Category D" : 15;'],
+  ["gantt", "gantt;\n  title Project Timeline;\n  dateFormat YYYY-MM-DD;\n  section Planning;\n  Research    :a1, 2024-01-01, 30d;\n  Design      :a2, after a1, 20d;"],
   ["er", "erDiagram;\n  USER ||--o{ ORDER : places;\n  ORDER ||--|{ LINE-ITEM : contains;\n  LINE-ITEM }|--|| PRODUCT : is;"],
   ["journey", "journey;\n  title User Journey;\n  section Onboarding;\n  Sign up: 3: User;\n  Verify email: 2: User, System;\n  Complete profile: 4: User;"],
   ["git", "gitGraph;\n  commit;\n  branch feature;\n  checkout feature;\n  commit;\n  commit;\n  checkout main;\n  merge feature;"],
@@ -113,64 +118,77 @@ function fallbackGenerate(mode: AiMode, instruction: string): string {
       for (const [key, latex] of Object.entries(EQUATION_LIBRARY)) {
         if (q.includes(key)) return latex;
       }
-      // Attempt to generate a simple equation from the description
-      if (q.includes("+") || q.includes("plus")) return `x + y = z`;
-      if (q.includes("=")) return q;
-      if (q.includes("^")) return q;
       return `\\text{${instruction.replace(/"/g, "'")}}`;
     }
-
     case "diagram": {
       for (const [key, defn] of DIAGRAM_LIBRARY) {
         if (q.includes(key)) return defn;
       }
       return `graph TD;\n  A[${instruction.substring(0, 30)}] --> B[Result];`;
     }
-
+    case "image":
+      return `https://placehold.co/800x400/6d28d9/ffffff?text=${encodeURIComponent(instruction.substring(0, 30))}`;
+    case "video":
+      return `[Video generation: ${instruction}]`;
     case "summary":
       return `Summary: ${instruction.substring(0, 100)}...`;
-
     case "rewrite":
       return `[Rewritten: ${instruction.substring(0, 60)}...]`;
-
     default:
       return `[AI generation for: ${instruction}]`;
   }
 }
 
 // ---------------------------------------------------------------------------
-// API call
+// API calls
 // ---------------------------------------------------------------------------
 
-async function generateWithAPI(
-  mode: AiMode,
-  instruction: string,
-  context?: string,
-): Promise<string | null> {
-  const config = MODE_CONFIG[mode];
-  const endpoint = "/api/admin/ai/ai-diagram-generation";
-
+async function generateImage(
+  prompt: string,
+): Promise<{ url: string; alt: string } | null> {
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch("/api/admin/ai/generate-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        article_id: "live",  // placeholder — real ID required for Supabase lookup
-        mode: config.apiMode,
-        instruction,
-        context,
-      }),
+      body: JSON.stringify({ prompt, size: "1K", ratio: "16:9" }),
     });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.content) return data.content;
-    }
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.ok && data.url) return { url: data.url, alt: data.alt };
+    return null;
   } catch {
-    // Fallback to client-side generation
+    return null;
   }
+}
 
-  return null;
+type VideoTaskStatus = "queued" | "in_progress" | "completed" | "failed";
+
+async function createVideoTask(prompt: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/admin/ai/generate-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.ok && data.taskId) return data.taskId;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function pollVideoTask(
+  taskId: string,
+): Promise<{ status: VideoTaskStatus; url?: string }> {
+  try {
+    const res = await fetch(`/api/admin/ai/generate-video?taskId=${encodeURIComponent(taskId)}`);
+    if (!res.ok) return { status: "failed" };
+    return await res.json();
+  } catch {
+    return { status: "failed" };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -182,8 +200,21 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
   const [instruction, setInstruction] = useState("");
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+
+  // Video polling state
+  const [videoStatus, setVideoStatus] = useState<VideoTaskStatus | null>(null);
+  const [videoTaskId, setVideoTaskId] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   const config = MODE_CONFIG[mode];
 
@@ -193,15 +224,57 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
     setGenerating(true);
     setError(null);
     setResult(null);
+    setPreviewUrl(null);
+    setVideoStatus(null);
+    setVideoTaskId(null);
 
-    // Try API first
-    const apiResult = await generateWithAPI(mode, instruction, currentBlockText);
+    if (mode === "image") {
+      // Try API first, fallback to placeholder
+      const apiResult = await generateImage(instruction);
+      if (apiResult) {
+        setPreviewUrl(apiResult.url);
+        setResult(apiResult.url);
+      } else {
+        const fallback = fallbackGenerate(mode, instruction);
+        setPreviewUrl(fallback);
+        setResult(fallback);
+      }
+    } else if (mode === "video") {
+      // Clear any existing poll before starting a new one
+      if (pollRef.current) clearInterval(pollRef.current);
 
-    if (apiResult) {
-      setResult(apiResult);
+      // Try API first
+      const taskId = await createVideoTask(instruction);
+      if (taskId) {
+        setVideoTaskId(taskId);
+        setVideoStatus("queued");
+
+        // Start polling every 5 seconds
+        pollRef.current = setInterval(async () => {
+          const status = await pollVideoTask(taskId);
+          setVideoStatus(status.status);
+
+          if (status.status === "completed" && status.url) {
+            setResult(status.url);
+            if (pollRef.current) clearInterval(pollRef.current);
+          } else if (status.status === "failed") {
+            setError("Video generation failed");
+            if (pollRef.current) clearInterval(pollRef.current);
+          }
+        }, 5000);
+      } else {
+        // Fallback
+        setResult(fallbackGenerate(mode, instruction));
+        setVideoStatus("completed");
+      }
     } else {
-      // Fallback: client-side generation
-      setResult(fallbackGenerate(mode, instruction));
+      // Text-based modes: try existing AI API first
+      const apiResult = await generateWithApiFallback(mode, instruction, currentBlockText);
+      if (apiResult) {
+        setResult(apiResult);
+      } else {
+        setResult(fallbackGenerate(mode, instruction));
+      }
     }
 
     setGenerating(false);
@@ -210,8 +283,16 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
   function handleInsert() {
     if (result) {
       onInsert(result, mode);
+      // Reset state
       setResult(null);
+      setPreviewUrl(null);
       setInstruction("");
+      setVideoStatus(null);
+      setVideoTaskId(null);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
       setOpen(false);
     }
   }
@@ -219,8 +300,29 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
   function switchMode(m: AiMode) {
     setMode(m);
     setResult(null);
+    setPreviewUrl(null);
     setError(null);
+    setVideoStatus(null);
+    setVideoTaskId(null);
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
   }
+
+  // Format video status for display
+  const videoStatusLabel =
+    videoStatus === "queued"
+      ? "Queued…"
+      : videoStatus === "in_progress"
+        ? "Generating video…"
+        : videoStatus === "completed"
+          ? "Completed"
+          : videoStatus === "failed"
+            ? "Failed"
+            : "";
+
+  const isImageOrVideo = mode === "image" || mode === "video";
 
   return (
     <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)]">
@@ -270,15 +372,26 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
           {/* Instruction input */}
           <div className="space-y-1.5">
             <label className="text-xs text-[var(--text-muted)]">
-              {mode === "custom" ? "What do you want to generate?" : "Describe what you need:"}
+              {mode === "image"
+                ? "Describe the image you want to generate:"
+                : mode === "video"
+                  ? "Describe the video you want to generate:"
+                  : mode === "custom"
+                    ? "What do you want to generate?"
+                    : "Describe what you need:"}
             </label>
             <textarea
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
               placeholder={config.placeholder}
               className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm min-h-[60px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
-              rows={2}
+              rows={isImageOrVideo ? 3 : 2}
             />
+            {isImageOrVideo && (
+              <p className="text-[10px] text-[var(--text-muted)]">
+                Be detailed for best results. Powered by Agnes AI (agnes-image-2.1-flash)
+              </p>
+            )}
           </div>
 
           {/* Generate button */}
@@ -299,7 +412,7 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                   </svg>
-                  Generate
+                  {mode === "image" ? "Generate image" : mode === "video" ? "Generate video" : "Generate"}
                 </>
               )}
             </button>
@@ -311,6 +424,26 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
             )}
           </div>
 
+          {/* Video status indicator */}
+          {videoStatus && videoStatus !== "completed" && videoStatus !== "failed" && (
+            <div className="flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-xs text-[var(--text-muted)]">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--accent)]/30 border-t-[var(--accent)]" />
+              {videoStatusLabel}
+            </div>
+          )}
+
+          {/* Image preview */}
+          {previewUrl && (
+            <div className="rounded-lg border border-[var(--border)] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt={instruction}
+                className="w-full aspect-video object-cover"
+              />
+            </div>
+          )}
+
           {/* Error */}
           {error && (
             <div
@@ -321,8 +454,8 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
             </div>
           )}
 
-          {/* Result */}
-          {result && (
+          {/* Result (text-based or generated URL) */}
+          {result && !previewUrl && mode !== "video" && (
             <div className="space-y-2 animate-fade-in-up">
               <div className="relative rounded-md border border-[var(--border)] bg-[var(--bg)]">
                 <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--border)]">
@@ -331,9 +464,7 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
                   </span>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (result) navigator.clipboard.writeText(result);
-                    }}
+                    onClick={() => { if (result) navigator.clipboard.writeText(result); }}
                     className="text-[10px] text-[var(--accent)] hover:underline"
                     title="Copy to clipboard"
                   >
@@ -344,33 +475,74 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
                   {result}
                 </pre>
               </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleInsert}
-                  className="rounded-md bg-[var(--accent)] text-white px-3 py-1.5 text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors"
+            </div>
+          )}
+
+          {/* Video result URL */}
+          {result && videoStatus === "completed" && !previewUrl && (
+            <div className="space-y-2 animate-fade-in-up">
+              <div className="rounded-md border border-[var(--border)] bg-[var(--bg)] p-3">
+                <p className="text-xs text-[var(--text-muted)] mb-1">Video URL:</p>
+                <a
+                  href={result}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[var(--accent)] hover:underline break-all"
                 >
-                  {mode === "equation" ? "Insert equation" : mode === "diagram" ? "Insert diagram" : "Insert text"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setResult(null)}
-                  className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
-                >
-                  Discard
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const prompt = `${config.prompt}${instruction}`;
-                    setInstruction(prompt);
-                    setResult(null);
-                  }}
-                  className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
-                >
-                  Retry
-                </button>
+                  {result}
+                </a>
               </div>
+            </div>
+          )}
+
+          {/* Insert button (for image and video results) */}
+          {result && (previewUrl || videoStatus === "completed") && (
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleInsert}
+                className="rounded-md bg-[var(--accent)] text-white px-3 py-1.5 text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors"
+              >
+                {mode === "image" ? "Insert image into article" : "Insert video embed into article"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setResult(null); setPreviewUrl(null); }}
+                className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+              >
+                Discard
+              </button>
+            </div>
+          )}
+
+          {/* Insert button for text-based results */}
+          {result && !isImageOrVideo && !previewUrl && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleInsert}
+                className="rounded-md bg-[var(--accent)] text-white px-3 py-1.5 text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors"
+              >
+                {mode === "equation" ? "Insert equation" : mode === "diagram" ? "Insert diagram" : "Insert text"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setResult(null)}
+                className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const prompt = `${config.prompt}${instruction}`;
+                  setInstruction(prompt);
+                  setResult(null);
+                }}
+                className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+              >
+                Retry
+              </button>
             </div>
           )}
 
@@ -382,4 +554,34 @@ export function AIGenerationTool({ currentBlockText, onInsert }: AIGenerationPro
       )}
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Shared text generation via AI API
+// ---------------------------------------------------------------------------
+
+async function generateWithApiFallback(
+  mode: AiMode,
+  instruction: string,
+  context?: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch("/api/admin/ai/ai-diagram-generation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        article_id: "live",
+        mode: MODE_CONFIG[mode].apiMode,
+        instruction,
+        context,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.content) return data.content;
+    }
+  } catch {
+    // Fallback to client-side
+  }
+  return null;
 }

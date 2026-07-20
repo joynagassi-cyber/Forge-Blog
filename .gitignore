@@ -47,3 +47,5 @@ test-results/
 # backups / temp artifacts
 *.bak
 sh.exe.stackdump
+all-migrations-combined.sql
+supabase/.temp/
