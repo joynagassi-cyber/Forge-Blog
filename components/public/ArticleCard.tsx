@@ -17,7 +17,7 @@ export function ArticleCard({ article, locale }: Props) {
   return (
     <Link
       href={`/${locale}/article/${article.slug}`}
-      className="group flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] animate-fade-in-up"
+      className="group flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow)] hover:-translate-y-1 hover:border-[var(--accent-warm)]/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-warm)] animate-fade-in-up"
     >
       {article.cover_image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -34,7 +34,7 @@ export function ArticleCard({ article, locale }: Props) {
         />
       )}
       <div className="flex flex-col gap-2 p-4 flex-1">
-        <h3 className="font-serif text-lg leading-snug text-[var(--accent)] line-clamp-2 group-hover:underline decoration-2 underline-offset-4 title-shimmer-hover">
+        <h3 className="font-serif text-lg leading-snug text-[var(--text-primary)] line-clamp-2 group-hover:text-[var(--accent)] group-hover:underline decoration-[var(--accent-warm)] decoration-2 underline-offset-4 transition-colors duration-200">
           {article.title}
         </h3>
         <p className="text-sm text-[var(--text-secondary)] line-clamp-2">

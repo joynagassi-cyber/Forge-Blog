@@ -51,7 +51,7 @@ export function SearchResults({ locale }: Props) {
       setLoading(true);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&locale=${locale}`);
-        const data = await res.json();
+        const data = await res.json() as { results?: SearchResultItem[]; count?: number };
         setResults(data.results ?? []);
         setSearched(true);
 

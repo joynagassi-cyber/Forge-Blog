@@ -37,8 +37,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const contentType = req.headers.get("content-type") ?? "";
 
   if (contentType.includes("application/json")) {
-    const body = await req.json().catch(() => ({}));
-    article_id = body.article_id ?? null;
+    const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+    article_id = (body.article_id as string | undefined) ?? null;
   } else {
     const form = await req.formData().catch(() => null);
     article_id = form?.get("article_id")?.toString() ?? null;

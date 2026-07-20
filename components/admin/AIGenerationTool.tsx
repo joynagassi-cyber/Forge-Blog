@@ -153,8 +153,8 @@ async function generateImage(
       body: JSON.stringify({ prompt, size: "1K", ratio: "16:9" }),
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    if (data.ok && data.url) return { url: data.url, alt: data.alt };
+    const data = await res.json() as { ok?: boolean; url?: string; alt?: string };
+    if (data.ok && data.url) return { url: data.url, alt: data.alt ?? "" };
     return null;
   } catch {
     return null;
@@ -171,7 +171,7 @@ async function createVideoTask(prompt: string): Promise<string | null> {
       body: JSON.stringify({ prompt }),
     });
     if (!res.ok) return null;
-    const data = await res.json();
+    const data = await res.json() as { ok?: boolean; taskId?: string };
     if (data.ok && data.taskId) return data.taskId;
     return null;
   } catch {
@@ -578,7 +578,8 @@ async function generateWithApiFallback(
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.content) return data.content;
+      const d = data as { content?: string };
+      if (d.content) return d.content;
     }
   } catch {
     // Fallback to client-side

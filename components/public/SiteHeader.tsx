@@ -18,6 +18,8 @@ export function SiteHeader({ locale }: Props) {
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--bg)] sticky top-0 z-40">
+      {/* Warm accent line */}
+      <div className="h-0.5 w-full bg-gradient-to-r from-[var(--accent-warm)]/0 via-[var(--accent-warm)] to-[var(--accent-warm)]/0" />
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between gap-4">
         <ForgeLogo locale={locale} />
 

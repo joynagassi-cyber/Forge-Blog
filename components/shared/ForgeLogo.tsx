@@ -52,6 +52,8 @@ export function ForgeLogo({ locale, variant = "header" }: Props) {
         <circle cx="320" cy="180" r="6" fill="#c4b5fd" opacity="0.8" />
         <circle cx="340" cy="200" r="4" fill="#a78bfa" opacity="0.6" />
         <circle cx="160" cy="340" r="5" fill="#c4b5fd" opacity="0.5" />
+        {/* Warm spark — amber particle */}
+        <circle cx="210" cy="160" r="4.5" fill="#d4a843" opacity="0.7" />
         {/* Subtle inner glow */}
         <circle
           cx="256" cy="256" r="230"

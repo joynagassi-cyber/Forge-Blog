@@ -64,7 +64,7 @@ async function handlePOST(req: NextRequest) {
   const authError = await checkAuth();
   if (authError) return authError;
 
-  const body = await req.json();
+  const body = await req.json() as { prompt?: string };
   const prompt = (body.prompt ?? "").trim();
   if (!prompt) {
     return NextResponse.json({ ok: false, error: "Prompt is required" }, { status: 400 });
@@ -99,7 +99,7 @@ async function handlePOST(req: NextRequest) {
     );
   }
 
-  const agnesData = await agnesRes.json();
+  const agnesData = await agnesRes.json() as { video_id?: string; id?: string };
   const taskId: string | undefined = agnesData.video_id ?? agnesData.id;
 
   if (!taskId) {
@@ -155,7 +155,9 @@ async function handleGET(req: NextRequest) {
     );
   }
 
-  const agnesData = await agnesRes.json();
+  const agnesData = await agnesRes.json() as {
+    status?: string; url?: string; video_url?: string; duration?: number; error?: string;
+  };
   const status: string = agnesData.status ?? "in_progress";
 
   if (status === "completed") {

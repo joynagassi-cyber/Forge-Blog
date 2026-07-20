@@ -54,14 +54,14 @@ export async function POST(req: NextRequest) {
     }
 
     // --- 2. Validate input ---
-    const body = await req.json();
+    const body = await req.json() as { prompt?: string; size?: string; ratio?: string };
     const prompt = (body.prompt ?? "").trim();
     if (!prompt) {
       return NextResponse.json({ ok: false, error: "Prompt is required" }, { status: 400 });
     }
 
-    const size = body.size && ALLOWED_SIZES.includes(body.size) ? body.size : "1K";
-    const ratio = body.ratio && ALLOWED_RATIOS.includes(body.ratio) ? body.ratio : undefined;
+    const size = body.size && (ALLOWED_SIZES as readonly string[]).includes(body.size) ? body.size : "1K";
+    const ratio = body.ratio && (ALLOWED_RATIOS as readonly string[]).includes(body.ratio) ? body.ratio : undefined;
 
     // --- 3. Verify Agnes API key ---
     if (!AGNES_API_KEY) {
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const agnesData = await agnesRes.json();
+    const agnesData = await agnesRes.json() as { data?: Array<{ url?: string }> };
     const imageUrl: string | undefined = agnesData.data?.[0]?.url;
 
     if (!imageUrl) {

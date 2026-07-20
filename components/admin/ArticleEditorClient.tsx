@@ -133,10 +133,10 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: coverAiPrompt, size: "2K", ratio: "16:9" }),
       });
-      const data = await res.json();
+      const data = await res.json() as { ok?: boolean; url?: string; alt?: string; error?: string };
       if (data.ok && data.url) {
         setCoverImage(data.url);
-        setCoverAlt(data.alt);
+        setCoverAlt(data.alt ?? "");
         setCoverAiPrompt("");
       } else {
         setCoverAiError(data.error ?? "Generation failed");

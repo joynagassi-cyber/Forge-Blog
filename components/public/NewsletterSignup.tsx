@@ -39,7 +39,7 @@ export function NewsletterSignup({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, locale }),
         });
-        const data = await res.json();
+        const data = await res.json() as { message?: string; error?: string };
         if (res.ok) {
           setStatus("success");
           setMessage(
