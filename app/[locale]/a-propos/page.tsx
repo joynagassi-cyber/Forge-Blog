@@ -1,6 +1,12 @@
 import type { Locale } from "@/lib/locale/resolve";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import {
+  siteGraphSchema,
+  jsonLdString,
+} from "@/lib/seo/structured-data";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -47,8 +53,31 @@ export default async function AboutPage({ params }: Props) {
   const locale = raw as Locale;
   const t = copy[locale];
 
+  const canonicalUrl = `${SITE_URL}/${locale}/a-propos`;
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16 md:py-20">
+    <>
+      {/* JSON-LD structured data for E-E-A-T */}
+      <div
+        dangerouslySetInnerHTML={{
+          __html: jsonLdString([
+            siteGraphSchema(locale),
+            {
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              "@id": `${canonicalUrl}#webpage`,
+              url: canonicalUrl,
+              name: t.metaTitle,
+              description: t.metaDesc,
+              isPartOf: { "@id": `${SITE_URL}/${locale}#website` },
+            },
+          ]),
+        }}
+        className="hidden"
+        aria-hidden
+      />
+
+      <div className="mx-auto max-w-2xl px-4 py-16 md:py-20">
       <h1 className="font-serif text-3xl md:text-4xl text-[var(--text-primary)] tracking-tight">
         {t.title}
       </h1>
@@ -66,5 +95,6 @@ export default async function AboutPage({ params }: Props) {
         </a>
       </div>
     </div>
+    </>
   );
 }
