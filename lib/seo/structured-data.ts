@@ -1,7 +1,15 @@
 /**
  * JSON-LD structured data helpers (section 4.4).
  * Generates schema.org-compliant JSON-LD for Article, BreadcrumbList,
- * Organization, and WebSite types.
+ * Organization, WebSite, WebPage, and Person types.
+ *
+ * 2026-07-20 SEO/AEO/GEO optimization:
+ * - Added siteGraphSchema() for unified @graph (Organization + WebSite + WebPage)
+ * - Added authorPersonSchema() for E-E-A-T author signals
+ * - Updated articleSchema() to use BlogPosting type with full ImageObject,
+ *   author @id reference, publisher @id reference, and guaranteed dateModified
+ *
+ * See: docs/superpowers/plans/2026-07-20-seo-aeo-geo-optimization.md
  */
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
@@ -24,6 +32,61 @@ export function organizationSchema() {
       "https://scyforge.com",
       "https://forge-blog.io",
     ],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// @graph — Unified Organization + WebSite + WebPage (homepage)
+// ---------------------------------------------------------------------------
+
+export function siteGraphSchema(locale: string) {
+  const baseUrl = `${SITE_URL}/${locale}`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        name: ORG_NAME,
+        url: SITE_URL,
+        logo: { "@id": `${SITE_URL}/#logo` },
+        sameAs: [
+          "https://nainoforge.com",
+          "https://scyforge.com",
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+        publisher: { "@id": `${SITE_URL}/#organization` },
+      },
+      {
+        "@type": "WebPage",
+        "@id": `${baseUrl}/#webpage`,
+        url: baseUrl,
+        name: locale === "fr" ? "Accueil" : "Home",
+        isPartOf: { "@id": `${SITE_URL}/#website` },
+        about: { "@id": `${SITE_URL}/#organization` },
+      },
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Author Person (E-E-A-T signal)
+// ---------------------------------------------------------------------------
+
+export function authorPersonSchema(name: string, sameAs: string[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": `${SITE_URL}/#author`,
+    name,
+    sameAs,
+    worksFor: { "@id": `${SITE_URL}/#organization` },
   };
 }
 
@@ -98,41 +161,50 @@ export type ArticleSchemaInput = {
 };
 
 export function articleSchema(input: ArticleSchemaInput) {
-  return {
+  const dateModified = input.dateModified ?? input.datePublished;
+
+  const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "BlogPosting",
     headline: input.headline,
     description: input.description ?? input.headline,
+    image: input.imageUrl
+      ? {
+          "@type": "ImageObject",
+          url: input.imageUrl,
+          caption: input.imageAlt ?? input.headline,
+        }
+      : undefined,
     author: {
+      "@id": `${SITE_URL}/#author`,
       "@type": "Person",
       name: input.author,
     },
     publisher: {
+      "@id": `${SITE_URL}/#organization`,
       "@type": "Organization",
       name: ORG_NAME,
       url: SITE_URL,
     },
     datePublished: input.datePublished,
-    dateModified: input.dateModified ?? input.datePublished,
-    ...(input.imageUrl
-      ? {
-          image: {
-            "@type": "ImageObject",
-            url: input.imageUrl,
-            caption: input.imageAlt ?? input.headline,
-          },
-        }
-      : {}),
+    dateModified: dateModified,
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": input.url,
     },
     url: input.url,
     inLanguage: input.locale === "fr" ? "fr-FR" : "en-US",
-    wordCount: input.wordCount,
-    timeRequired: input.timeRequired,
-    isAccessibleForFree: true,
   };
+
+  if (input.wordCount) {
+    schema.wordCount = input.wordCount;
+  }
+
+  if (input.timeRequired) {
+    schema.totalTime = input.timeRequired;
+  }
+
+  return schema;
 }
 
 // ---------------------------------------------------------------------------
