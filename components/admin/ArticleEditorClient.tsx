@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ArticleContent, BodyBlock, HeroMeta, KeyTakeaway, ConversionBlock } from "@/lib/blocks/types";
 import { BlockNoteEditor } from "./BlockNoteEditor";
+import { ImageUpload } from "@/components/shared/ImageUpload";
+
+export type SeoMetaFields = {
+  seo_title: string;
+  meta_description: string;
+  canonical_url: string;
+  robots: string;
+};
 
 type Props = {
   id: string;
@@ -11,12 +19,37 @@ type Props = {
   locale: string;
   slug: string;
   onSave?: (content: ArticleContent) => Promise<boolean>;
+  /** Pre-populated SEO metadata from server (dedicated DB columns) */
+  initialSeo?: SeoMetaFields;
 };
 
-export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave }: Props) {
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
+
+export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave, initialSeo }: Props) {
   const [content, setContent] = useState<ArticleContent>(initial);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverAlt, setCoverAlt] = useState<string>("");
+
+  // SEO metadata fields (persisted to dedicated DB columns via API)
+  const [seoToggle, setSeoToggle] = useState(false);
+  const [seoTitle, setSeoTitle] = useState(initialSeo?.seo_title ?? "");
+  const [seoDesc, setSeoDesc] = useState(initialSeo?.meta_description ?? "");
+  const [seoCanonical, setSeoCanonical] = useState(initialSeo?.canonical_url ?? "");
+  const [seoRobots, setSeoRobots] = useState(initialSeo?.robots ?? "index,follow");
+
+  // Sync SEO state when article changes (navigating between articles)
+  const prevId = useRef(id);
+  useEffect(() => {
+    if (prevId.current !== id) {
+      prevId.current = id;
+      setSeoTitle(initialSeo?.seo_title ?? "");
+      setSeoDesc(initialSeo?.meta_description ?? "");
+      setSeoCanonical(initialSeo?.canonical_url ?? "");
+      setSeoRobots(initialSeo?.robots ?? "index,follow");
+    }
+  }, [id, initialSeo]);
 
   const hero = content.sequence.find((b) => b.type === "hero_meta") as HeroMeta | undefined;
   const takeaway = content.sequence.find((b) => b.type === "key_takeaway") as KeyTakeaway | undefined;
@@ -63,16 +96,51 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave 
     setSaved(false);
   }
 
+  function handleCoverUploaded(url: string, alt: string) {
+    setCoverImage(url);
+    setCoverAlt(alt);
+    setSaved(false);
+  }
+
+  function removeCover() {
+    setCoverImage(null);
+    setCoverAlt("");
+    setSaved(false);
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
+      // Build complete content with cover image in hero_meta
+      const contentWithCover: ArticleContent = coverImage
+        ? {
+            ...content,
+            sequence: content.sequence.map((b) =>
+              b.type === "hero_meta"
+                ? { ...b, coverImageUrl: coverImage, coverImageAlt: coverAlt }
+                : b
+            ),
+          }
+        : content;
+
+      // Build SEO payload (sent separately from content to dedicated DB columns)
+      const seoPayload = {
+        seo_title: seoTitle,
+        meta_description: seoDesc,
+        canonical_url: seoCanonical,
+        robots: seoRobots,
+      };
+
       if (onSave) {
-        await onSave(content);
+        await onSave(contentWithCover);
       } else {
         const res = await fetch(`/api/admin/articles/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({
+            content: contentWithCover,
+            seoMeta: seoPayload,
+          }),
         });
         if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       }
@@ -90,6 +158,46 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave 
 
   return (
     <div className="space-y-6">
+      {/* Cover image */}
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5 space-y-3">
+        <h2 className="font-semibold text-sm uppercase tracking-wide text-[var(--text-muted)]">Cover image</h2>
+        {(coverImage || hero.coverImageUrl) ? (
+          <div className="space-y-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverImage || hero.coverImageUrl}
+              alt={coverAlt || hero.coverImageAlt || "Cover preview"}
+              className="aspect-video w-full max-w-lg rounded-lg border border-[var(--border)] object-cover"
+            />
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-[var(--text-muted)]">
+                Alt text:
+                <input
+                  value={coverAlt || hero.coverImageAlt || ""}
+                  onChange={(e) => setCoverAlt(e.target.value)}
+                  className="ml-2 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-xs"
+                  placeholder="Describe the image"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={removeCover}
+                className="text-xs text-red-500 hover:underline ml-auto"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <ImageUpload
+            onUploaded={handleCoverUploaded}
+            prefix="covers/"
+            maxWidth={1920}
+            label="Upload cover image"
+          />
+        )}
+      </section>
+
       {/* Hero meta */}
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5 space-y-3">
         <h2 className="font-semibold text-sm uppercase tracking-wide text-[var(--text-muted)]">Hero meta</h2>
@@ -193,6 +301,96 @@ export function ArticleEditorClient({ id, initial, isLive, locale, slug, onSave 
             />
           </Field>
         </div>
+      </section>
+
+      {/* SEO Metadata */}
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5 space-y-3">
+        <button
+          type="button"
+          onClick={() => setSeoToggle((v) => !v)}
+          className="w-full flex items-center justify-between"
+        >
+          <h2 className="font-semibold text-sm uppercase tracking-wide text-[var(--text-muted)]">
+            SEO &amp; Social preview
+          </h2>
+          <span className="text-[var(--text-muted)] text-xs">{seoToggle ? "▾" : "▸"}</span>
+        </button>
+
+        {seoToggle && (
+          <div className="space-y-3 pt-1">
+            <Field label="SEO title (overrides article title)">
+              <input
+                value={seoTitle}
+                onChange={(e) => setSeoTitle(e.target.value)}
+                placeholder={hero.title || "Leave empty to use article title"}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                maxLength={60}
+              />
+              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{seoTitle.length}/60 chars</p>
+            </Field>
+
+            <Field label="Meta description">
+              <textarea
+                value={seoDesc}
+                onChange={(e) => setSeoDesc(e.target.value)}
+                placeholder={hero.dek || "Brief summary for search results"}
+                rows={2}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                maxLength={160}
+              />
+              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{seoDesc.length}/160 chars</p>
+            </Field>
+
+            <Field label="Canonical URL">
+              <input
+                value={seoCanonical}
+                onChange={(e) => setSeoCanonical(e.target.value)}
+                placeholder="Leave empty to auto-detect"
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-mono text-xs"
+              />
+            </Field>
+
+            <Field label="Robots">
+              <select
+                value={seoRobots}
+                onChange={(e) => setSeoRobots(e.target.value)}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+              >
+                <option value="index,follow">index, follow (default)</option>
+                <option value="noindex,follow">noindex, follow</option>
+                <option value="index,nofollow">index, nofollow</option>
+                <option value="noindex,nofollow">noindex, nofollow</option>
+              </select>
+            </Field>
+
+            {/* Social preview card */}
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)] overflow-hidden max-w-md">
+              {coverImage || hero.coverImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={coverImage || hero.coverImageUrl}
+                  alt={coverAlt || hero.coverImageAlt || ""}
+                  className="aspect-[2/1] w-full object-cover"
+                />
+              ) : (
+                <div className="aspect-[2/1] w-full bg-[var(--surface-2)] flex items-center justify-center text-xs text-[var(--text-muted)]">
+                  No image — add a cover for social preview
+                </div>
+              )}
+              <div className="p-3 space-y-1">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                  {SITE_URL.replace("https://", "")}/{locale}/article/{slug}
+                </p>
+                <p className="text-sm font-semibold text-[var(--text-primary)] leading-snug line-clamp-2">
+                  {seoTitle || hero.title || "Article title"}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
+                  {seoDesc || hero.dek || "Meta description"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* BlockNote body editor */}

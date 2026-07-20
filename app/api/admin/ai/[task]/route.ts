@@ -14,6 +14,7 @@ const ALLOWED_TASKS = new Set([
   "ai-brief-generation",
   "ai-draft-generation",
   "ai-seo-aeo-geo-audit",
+  "ai-diagram-generation",
 ]);
 
 export async function POST(req: NextRequest, { params }: Params) {

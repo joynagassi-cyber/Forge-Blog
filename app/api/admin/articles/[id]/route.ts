@@ -14,7 +14,7 @@ type Params = { params: Promise<{ id: string }> };
 export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params;
 
-  let body: { content?: ArticleContent };
+  let body: { content?: ArticleContent; seoMeta?: { seo_title?: string; meta_description?: string; canonical_url?: string; robots?: string } };
   try {
     body = await req.json();
   } catch {
@@ -35,6 +35,30 @@ export async function PUT(req: NextRequest, { params }: Params) {
     );
   }
 
+  // Extract cover image from hero_meta (if present) to sync with DB columns
+  const hero = content.sequence.find((b) => b.type === "hero_meta");
+  const coverMeta =
+    hero && hero.type === "hero_meta"
+      ? { cover_image_url: hero.coverImageUrl ?? null, cover_image_alt: hero.coverImageAlt ?? null }
+      : {};
+
+  // SEO metadata from body (with server-side length validation)
+  const seoMeta = body.seoMeta;
+  const seoColumns = seoMeta
+    ? {
+        seo_title: seoMeta.seo_title
+          ? String(seoMeta.seo_title).slice(0, 60)
+          : null,
+        meta_description: seoMeta.meta_description
+          ? String(seoMeta.meta_description).slice(0, 160)
+          : null,
+        canonical_url: seoMeta.canonical_url?.trim() || null,
+        robots: ["index,follow","noindex,follow","index,nofollow","noindex,nofollow"].includes(seoMeta.robots ?? "")
+          ? seoMeta.robots!
+          : "index,follow",
+      }
+    : {};
+
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
@@ -45,13 +69,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from("articles")
-    .update({ content, updated_at: new Date().toISOString() })
+    .update({
+      content,
+      ...coverMeta,
+      ...seoColumns,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
   return NextResponse.json({

@@ -5,6 +5,7 @@ import type { ArticleContent } from "@/lib/blocks/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArticleEditorClient } from "@/components/admin/ArticleEditorClient";
+import { ArticleScoreSummary } from "@/components/admin/ArticleScoreSummary";
 
 async function saveContent(articleId: string, content: ArticleContent) {
   "use server";
@@ -91,6 +92,22 @@ export default async function ArticleEditorPage({
         )}
       </section>
 
+      {/* Content scores */}
+      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5">
+        <h2 className="font-semibold mb-3">Content scores</h2>
+        <ArticleScoreSummary
+          article={{
+            id,
+            title,
+            locale,
+            status,
+            content,
+            pillar_slug: pillarSlug ?? "",
+            published_at: liveArticle?.published_at ?? null,
+          }}
+        />
+      </section>
+
       {/* AI pipeline */}
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5 space-y-3">
         <h2 className="font-semibold">AI pipeline (gated)</h2>
@@ -150,6 +167,12 @@ export default async function ArticleEditorPage({
           locale={locale}
           slug={slug}
           onSave={(content) => saveContent(id, content)}
+          initialSeo={{
+            seo_title: liveArticle?.seo_title ?? "",
+            meta_description: liveArticle?.meta_description ?? "",
+            canonical_url: liveArticle?.canonical_url ?? "",
+            robots: liveArticle?.robots ?? "index,follow",
+          }}
         />
       </section>
     </div>

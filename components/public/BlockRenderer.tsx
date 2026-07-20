@@ -4,6 +4,9 @@ import { Button } from "@/components/shared/Button";
 import type { BodyBlock } from "@/lib/blocks/types";
 import { RichText } from "./RichText";
 import { DiagramBlockView } from "./DiagramBlockView";
+import { EquationBlockView } from "./EquationBlockView";
+import { MermaidBlockView } from "./MermaidBlockView";
+import { FootnoteBlock, EmbedBlock } from "./AdvancedMarkdownBlocks";
 import { useEffect, useRef, useState } from "react";
 
 function CodeBlockView({ language, code }: { language: string; code: string }) {
@@ -246,10 +249,20 @@ export function BlockRenderer({ block }: { block: BodyBlock }) {
         </a>
       );
     case "equation":
+      return <EquationBlockView latex={block.latex} />;
+    case "mermaid":
+      return <MermaidBlockView definition={block.definition} title={block.title} />;
+    case "footnotes":
+      return <FootnoteBlock footnotes={block.items} />;
+    case "embed":
       return (
-        <div className="rounded-lg bg-[var(--surface-1)] px-4 py-3 font-mono text-center text-[var(--text-primary)]">
-          {block.latex}
-        </div>
+        <EmbedBlock
+          type={block.embedType}
+          url={block.url}
+          title={block.title}
+          width={block.width}
+          height={block.height}
+        />
       );
     case "divider":
       return <hr className="border-[var(--border)] my-8" />;

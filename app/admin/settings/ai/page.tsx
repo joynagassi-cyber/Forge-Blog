@@ -3,6 +3,7 @@ const TASKS = [
   "brief_generation",
   "draft_generation",
   "seo_aeo_geo_audit",
+  "diagram_generation",
 ] as const;
 
 export default function AiSettingsPage() {
@@ -63,7 +64,7 @@ export default function AiSettingsPage() {
 
       <div className="rounded-lg border border-[var(--border)] p-5 text-sm text-[var(--text-secondary)] space-y-2">
         <p className="font-medium text-[var(--text-primary)]">
-          Edge Functions (scaffolded)
+          Edge Functions (scaffolded) · diagram génération ajouté
         </p>
         <ul className="list-disc pl-5 space-y-1">
           <li>

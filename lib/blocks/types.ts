@@ -16,6 +16,9 @@ export type BodyBlockType =
   | "image"
   | "bookmark"
   | "equation"
+  | "mermaid"
+  | "footnotes"
+  | "embed"
   | "divider"
   | "diagram"
   | "product_bridge_inline";
@@ -106,6 +109,26 @@ export interface EquationBlock extends BaseBlock {
   latex: string;
 }
 
+export interface MermaidBlock extends BaseBlock {
+  type: "mermaid";
+  definition: string;
+  title?: string;
+}
+
+export interface FootnotesBlock extends BaseBlock {
+  type: "footnotes";
+  items: { id: string; text: string; href?: string }[];
+}
+
+export interface EmbedBlock extends BaseBlock {
+  type: "embed";
+  embedType: "youtube" | "twitter" | "iframe" | "generic";
+  url: string;
+  title?: string;
+  width?: number;
+  height?: number;
+}
+
 export interface DividerBlock extends BaseBlock {
   type: "divider";
 }
@@ -150,6 +173,9 @@ export type BodyBlock =
   | ImageBlock
   | BookmarkBlock
   | EquationBlock
+  | MermaidBlock
+  | FootnotesBlock
+  | EmbedBlock
   | DividerBlock
   | DiagramBlock
   | ProductBridgeBlock;
@@ -165,6 +191,8 @@ export interface HeroMeta {
   readTimeMinutes: number;
   pillarSlug: string;
   pillarName: string;
+  coverImageUrl?: string;
+  coverImageAlt?: string;
 }
 
 export interface KeyTakeaway {

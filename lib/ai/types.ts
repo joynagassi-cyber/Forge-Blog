@@ -5,7 +5,8 @@
 export type AiTaskType =
   | "brief_generation"
   | "draft_generation"
-  | "seo_aeo_geo_audit";
+  | "seo_aeo_geo_audit"
+  | "diagram_generation";
 
 export type AdapterType = "anthropic" | "openai" | "custom";
 

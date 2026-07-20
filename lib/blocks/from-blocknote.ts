@@ -118,6 +118,10 @@ function mapType(bn: BNBlock): BodyBlockType | null {
       return "divider";
     case "bookmark":
       return "bookmark";
+    case "math":
+      return "equation";
+    case "mermaid":
+      return "mermaid";
     default:
       return null;
   }
@@ -238,6 +242,23 @@ function bnToBodyBlock(bn: BNBlock): BodyBlock | null {
         description: String(bm.props?.description ?? ""),
       };
     }
+    case "equation": {
+      const eq = bn as BNBlock & { props: { latex?: string } };
+      return {
+        ...base,
+        type: "equation",
+        latex: String(eq.props?.latex ?? ""),
+      };
+    }
+    case "mermaid": {
+      const md = bn as BNBlock & { props: { definition?: string; title?: string } };
+      return {
+        ...base,
+        type: "mermaid",
+        definition: String(md.props?.definition ?? ""),
+        title: String(md.props?.title ?? ""),
+      };
+    }
     default:
       return null;
   }
@@ -355,6 +376,21 @@ export function toBlockNote(blocks: BodyBlock[]): unknown[] {
           id: block.id,
           type: "bookmark",
           props: { url: block.url, title: block.title, description: block.description },
+        };
+      case "equation":
+        return {
+          id: block.id,
+          type: "math",
+          props: { latex: block.latex },
+        };
+      case "mermaid":
+        return {
+          id: block.id,
+          type: "mermaid",
+          props: {
+            definition: block.definition,
+            title: block.title ?? "",
+          },
         };
       default:
         // Unsupported: degrade to plain paragraph so it stays readable

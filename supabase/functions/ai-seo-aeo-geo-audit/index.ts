@@ -42,11 +42,11 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
   const base = (provider.endpoint_url ?? "").replace(/\/$/, "");
   const apiKey: string = Deno.env.get(provider.api_key_secret_ref) ?? "";
 
-  if (!apiKey) throw new Error(`Secret "${provider.api_key_secret_ref}" not set`);
+  if (!apiKey) throw new Error("Secret not set");
 
   if (provider.adapter_type === "anthropic") {
     const url = base || "https://api.anthropic.com";
-    const res = await fetch(`${url}/v1/messages`, {
+    const res = await fetch(url + "/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -62,13 +62,13 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(`Anthropic error ${res.status}: ${JSON.stringify(data)}`);
+    if (!res.ok) throw new Error("Anthropic error " + res.status + ": " + JSON.stringify(data));
     return data.content?.filter((c: any) => c.type === "text").map((c: any) => c.text).join("") ?? "";
   }
 
   if (provider.adapter_type === "openai") {
     const url = base || "https://api.openai.com";
-    const res = await fetch(`${url}/v1/chat/completions`, {
+    const res = await fetch(url + "/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + apiKey },
       body: JSON.stringify({
@@ -82,7 +82,7 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(`OpenAI error ${res.status}: ${JSON.stringify(data)}`);
+    if (!res.ok) throw new Error("OpenAI error " + res.status + ": " + JSON.stringify(data));
     return data.choices?.[0]?.message?.content ?? "";
   }
 
@@ -92,7 +92,7 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
     body: JSON.stringify({ model: provider.default_model, system: systemPrompt, user: userPrompt, max_tokens: 3000 }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(`Custom adapter error ${res.status}`);
+  if (!res.ok) throw new Error("Custom adapter error " + res.status);
   return data.text ?? data.content ?? "";
 }
 

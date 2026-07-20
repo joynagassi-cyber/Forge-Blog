@@ -1,11 +1,12 @@
+import { ForgeLogo } from "@/components/shared/ForgeLogo";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import type { Locale } from "@/lib/locale/resolve";
 import Link from "next/link";
 
 const copy = {
-  en: { brand: "NainoForge", search: "Search", admin: "Editorial" },
-  fr: { brand: "NainoForge", search: "Rechercher", admin: "Éditorial" },
+  en: { search: "Search", admin: "Editorial" },
+  fr: { search: "Rechercher", admin: "Éditorial" },
 };
 
 type Props = {
@@ -18,12 +19,7 @@ export function SiteHeader({ locale }: Props) {
   return (
     <header className="border-b border-[var(--border)] bg-[var(--bg)] sticky top-0 z-40">
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between gap-4">
-        <Link
-          href={`/${locale}`}
-          className="font-semibold tracking-tight text-[var(--text-primary)] hover:text-[var(--accent)]"
-        >
-          {t.brand}
-        </Link>
+        <ForgeLogo locale={locale} />
 
         <nav className="flex items-center gap-4" aria-label="Primary">
           <Link

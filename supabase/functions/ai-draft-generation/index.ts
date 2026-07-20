@@ -28,12 +28,12 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
   const apiKey: string = Deno.env.get(provider.api_key_secret_ref) ?? "";
 
   if (!apiKey) {
-    throw new Error(`Secret "${provider.api_key_secret_ref}" is not set in Edge Function env`);
+    throw new Error("Secret not set in Edge Function env");
   }
 
   if (provider.adapter_type === "anthropic") {
     const url = base || "https://api.anthropic.com";
-    const res = await fetch(`${url}/v1/messages`, {
+    const res = await fetch(url + "/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -49,13 +49,13 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(`Anthropic error ${res.status}: ${JSON.stringify(data)}`);
+    if (!res.ok) throw new Error("Anthropic error " + res.status + ": " + JSON.stringify(data));
     return data.content?.filter((c: any) => c.type === "text").map((c: any) => c.text).join("") ?? "";
   }
 
   if (provider.adapter_type === "openai") {
     const url = base || "https://api.openai.com";
-    const res = await fetch(`${url}/v1/chat/completions`, {
+    const res = await fetch(url + "/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,7 +72,7 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(`OpenAI error ${res.status}: ${JSON.stringify(data)}`);
+    if (!res.ok) throw new Error("OpenAI error " + res.status + ": " + JSON.stringify(data));
     return data.choices?.[0]?.message?.content ?? "";
   }
 
@@ -82,7 +82,7 @@ async function callProvider(provider: any, systemPrompt: string, userPrompt: str
     body: JSON.stringify({ model: provider.default_model, system: systemPrompt, user: userPrompt, max_tokens: maxTokens }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(`Custom adapter error ${res.status}: ${JSON.stringify(data)}`);
+  if (!res.ok) throw new Error("Custom adapter error " + res.status + ": " + JSON.stringify(data));
   return data.text ?? data.content ?? "";
 }
 
@@ -137,39 +137,37 @@ Deno.serve(async (req) => {
     ? article.pillars?.name_fr
     : article.pillars?.name_en;
 
-  const systemPrompt = `You are a senior editorial writer for Forge-Blog, the content platform for NainoForge and SCYForge. You write authoritative, useful articles grounded in real cognitive science and real SOC operations. You never fabricate facts, statistics, or testimonials. Mark unverified claims [à vérifier]. Do not use em dashes. Use commas, colons, semicolons, or full stops. Output the full article content as a JSON object matching the section-10 scaffold.`;
+  const systemPrompt = "You are a senior editorial writer for Forge-Blog, the content platform for NainoForge and SCYForge. You write authoritative, useful articles grounded in real cognitive science and real SOC operations. You never fabricate facts, statistics, or testimonials. Mark unverified claims [a verifier]. Do not use em dashes. Use commas, colons, semicolons, or full stops. Output the full article content as a JSON object matching the section-10 scaffold.";
 
-  const userPrompt = `Write the full article draft as a section-10 scaffold JSON.
-
-Working title: ${article.working_title}
-Pillar: ${pillarName ?? "unknown"}
-Locale: ${article.locale}
-Brief: ${JSON.stringify(article.brief, null, 2)}
-
-Return ONLY valid JSON with this exact shape:
-{
-  "version": 1,
-  "sequence": [
-    { "type": "hero_meta", "title": "...", "dek": "...", "author": "Forge Editorial", "publishedAt": "${new Date().toISOString()}", "readTimeMinutes": 8, "pillarSlug": "${article.pillars?.slug ?? ""}", "pillarName": "${pillarName ?? ""}" },
-    { "type": "key_takeaway", "items": ["...", "...", "..."] },
-    { "type": "toc_anchor" },
-    { "type": "body_blocks", "blocks": [
-        { "id": "b1", "type": "h2", "text": "..." },
-        { "id": "b2", "type": "paragraph", "spans": [{ "text": "..." }] },
-        ...more blocks including callouts, quotes, checklists, code where relevant...
-      ]
-    },
-    { "type": "conversion_block", "product": "${article.pillars?.target_product ?? "none"}", "headline": "...", "body": "...", "ctaLabel": "...", "ctaHref": "https://nainoforge.com" },
-    { "type": "related_articles_anchor" }
-  ]
-}
-
-Rules:
-- key_takeaway: 2–4 items, genuine insights, not generic summaries.
-- body_blocks: at least 6 h2/h3 headings, substantive paragraphs, minimum one callout or quote.
-- At most one product_bridge_inline block in body_blocks.
-- Bold spans: { "text": "...", "marks": { "bold": true } } — they will render in violet.
-- Do not add markdown syntax inside text fields. Use the block types instead.`;
+  const userPrompt =
+    "Write the full article draft as a section-10 scaffold JSON.\n\n" +
+    "Working title: " + article.working_title + "\n" +
+    "Pillar: " + (pillarName ?? "unknown") + "\n" +
+    "Locale: " + article.locale + "\n" +
+    "Brief: " + JSON.stringify(article.brief, null, 2) + "\n\n" +
+    "Return ONLY valid JSON with this exact shape:\n" +
+    "{\n" +
+    "  \"version\": 1,\n" +
+    "  \"sequence\": [\n" +
+    "    { \"type\": \"hero_meta\", \"title\": \"...\", \"dek\": \"...\", \"author\": \"Forge Editorial\", \"publishedAt\": \"" + new Date().toISOString() + "\", \"readTimeMinutes\": 8, \"pillarSlug\": \"" + (article.pillars?.slug ?? "") + "\", \"pillarName\": \"" + (pillarName ?? "") + "\" },\n" +
+    "    { \"type\": \"key_takeaway\", \"items\": [\"...\", \"...\", \"...\"] },\n" +
+    "    { \"type\": \"toc_anchor\" },\n" +
+    "    { \"type\": \"body_blocks\", \"blocks\": [\n" +
+    "        { \"id\": \"b1\", \"type\": \"h2\", \"text\": \"...\" },\n" +
+    "        { \"id\": \"b2\", \"type\": \"paragraph\", \"spans\": [{ \"text\": \"...\" }] },\n" +
+    "        ...more blocks including callouts, quotes, checklists, code where relevant...\n" +
+    "      ]\n" +
+    "    },\n" +
+    "    { \"type\": \"conversion_block\", \"product\": \"" + (article.pillars?.target_product ?? "none") + "\", \"headline\": \"...\", \"body\": \"...\", \"ctaLabel\": \"...\", \"ctaHref\": \"https://nainoforge.com\" },\n" +
+    "    { \"type\": \"related_articles_anchor\" }\n" +
+    "  ]\n" +
+    "}\n\n" +
+    "Rules:\n" +
+    "- key_takeaway: 2-4 items, genuine insights, not generic summaries.\n" +
+    "- body_blocks: at least 6 h2/h3 headings, substantive paragraphs, minimum one callout or quote.\n" +
+    "- At most one product_bridge_inline block in body_blocks.\n" +
+    "- Bold spans: { \"text\": \"...\", \"marks\": { \"bold\": true } } — they will render in violet.\n" +
+    "- Do not add markdown syntax inside text fields. Use the block types instead.";
 
   let draftText: string;
   try {

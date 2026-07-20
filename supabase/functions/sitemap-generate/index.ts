@@ -58,22 +58,22 @@ Deno.serve(async (req) => {
   // Static pages (home pages per locale)
   const staticUrls = [
     {
-      loc: `${SITE_URL}/en`,
+      loc: SITE_URL + "/en",
       alternates: [
-        { hreflang: "en", href: `${SITE_URL}/en` },
-        { hreflang: "fr", href: `${SITE_URL}/fr` },
-        { hreflang: "x-default", href: `${SITE_URL}/en` },
+        { hreflang: "en", href: SITE_URL + "/en" },
+        { hreflang: "fr", href: SITE_URL + "/fr" },
+        { hreflang: "x-default", href: SITE_URL + "/en" },
       ],
       lastmod: new Date().toISOString().slice(0, 10),
       changefreq: "daily",
       priority: "1.0",
     },
     {
-      loc: `${SITE_URL}/fr`,
+      loc: SITE_URL + "/fr",
       alternates: [
-        { hreflang: "en", href: `${SITE_URL}/en` },
-        { hreflang: "fr", href: `${SITE_URL}/fr` },
-        { hreflang: "x-default", href: `${SITE_URL}/en` },
+        { hreflang: "en", href: SITE_URL + "/en" },
+        { hreflang: "fr", href: SITE_URL + "/fr" },
+        { hreflang: "x-default", href: SITE_URL + "/en" },
       ],
       lastmod: new Date().toISOString().slice(0, 10),
       changefreq: "daily",
@@ -88,21 +88,21 @@ Deno.serve(async (req) => {
     const frVersion = group.find((a) => a.locale === "fr");
 
     for (const article of group) {
-      const loc = xmlEscape(`${SITE_URL}/${article.locale}/article/${article.slug}`);
+      const loc = xmlEscape(SITE_URL + "/" + article.locale + "/article/" + article.slug);
       const lastmod = (article.last_updated_at ?? article.published_at ?? "")
         .slice(0, 10);
 
       const alternates = [
         ...(enVersion
-          ? [{ hreflang: "en", href: xmlEscape(`${SITE_URL}/en/article/${enVersion.slug}`) }]
+          ? [{ hreflang: "en", href: xmlEscape(SITE_URL + "/en/article/" + enVersion.slug) }]
           : []),
         ...(frVersion
-          ? [{ hreflang: "fr", href: xmlEscape(`${SITE_URL}/fr/article/${frVersion.slug}`) }]
+          ? [{ hreflang: "fr", href: xmlEscape(SITE_URL + "/fr/article/" + frVersion.slug) }]
           : []),
         // x-default always points to the English canonical (section 8.2)
         {
           hreflang: "x-default",
-          href: xmlEscape(`${SITE_URL}/en/article/${(enVersion ?? article).slug}`),
+          href: xmlEscape(SITE_URL + "/en/article/" + (enVersion ?? article).slug),
         },
       ];
 

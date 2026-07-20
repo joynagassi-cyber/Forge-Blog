@@ -3,6 +3,7 @@
 import type { Locale } from "@/lib/locale/resolve";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type Props = {
   locale: Locale;
@@ -11,15 +12,27 @@ type Props = {
 };
 
 /**
- * Derives the peer-locale path from the current URL when explicit hrefs
- * are not provided. For articles with different slugs per locale, pass enHref/frHref.
+ * Language switcher with three strategies (priority order):
+ * 1. Explicit enHref/frHref props (passed from server when available)
+ * 2. <link rel="alternate" hreflang="en|fr"> tags in <head>
+ *    (automatically set by Next.js metadata for article pages)
+ * 3. Pathname-based derivation (fallback for pages without alternates)
  */
 export function LanguageSwitcher({ locale, enHref, frHref }: Props) {
   const pathname = usePathname() || `/${locale}`;
   const withoutLocale = pathname.replace(/^\/(en|fr)/, "") || "";
 
-  const en = enHref ?? `/en${withoutLocale}`;
-  const fr = frHref ?? `/fr${withoutLocale}`;
+  // Use state + effect to read hreflang after hydration to avoid mismatches
+  const [hreflangEn, setHreflangEn] = useState<string | undefined>();
+  const [hreflangFr, setHreflangFr] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!enHref) setHreflangEn(getHreflangHref("en"));
+    if (!frHref) setHreflangFr(getHreflangHref("fr"));
+  }, [enHref, frHref]);
+
+  const resolvedEn = enHref ?? hreflangEn ?? `/en${withoutLocale}`;
+  const resolvedFr = frHref ?? hreflangFr ?? `/fr${withoutLocale}`;
 
   return (
     <div
@@ -28,7 +41,7 @@ export function LanguageSwitcher({ locale, enHref, frHref }: Props) {
       aria-label="Language"
     >
       <Link
-        href={en}
+        href={resolvedEn}
         className={
           locale === "en"
             ? "font-semibold text-[var(--accent)] underline decoration-2 underline-offset-4"
@@ -42,7 +55,7 @@ export function LanguageSwitcher({ locale, enHref, frHref }: Props) {
         ·
       </span>
       <Link
-        href={fr}
+        href={resolvedFr}
         className={
           locale === "fr"
             ? "font-semibold text-[var(--accent)] underline decoration-2 underline-offset-4"
@@ -54,4 +67,21 @@ export function LanguageSwitcher({ locale, enHref, frHref }: Props) {
       </Link>
     </div>
   );
+}
+
+/**
+ * Reads a <link rel="alternate" hreflang="..."> href from <head>.
+ * Returns the URL path (stripping origin) or undefined if not found.
+ */
+function getHreflangHref(hreflang: string): string | undefined {
+  const link = document.querySelector<HTMLLinkElement>(
+    `link[rel="alternate"][hreflang="${hreflang}"]`
+  );
+  if (!link) return undefined;
+  try {
+    const url = new URL(link.href);
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return link.getAttribute("href") ?? undefined;
+  }
 }

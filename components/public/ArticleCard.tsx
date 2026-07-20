@@ -17,7 +17,7 @@ export function ArticleCard({ article, locale }: Props) {
   return (
     <Link
       href={`/${locale}/article/${article.slug}`}
-      className="group flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+      className="group flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] animate-fade-in-up"
     >
       {article.cover_image_url ? (
         // eslint-disable-next-line @next/next/no-img-element

@@ -2,7 +2,11 @@ import { BodyBlocks } from "@/components/public/BlockRenderer";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { TableOfContents } from "@/components/public/TableOfContents";
 import { Button } from "@/components/shared/Button";
-import { captureCtaClick } from "@/components/shared/PostHogProvider";
+import {
+  captureCtaClick,
+  ScrollDepthTracker,
+  ReadCompletionTracker,
+} from "@/components/shared/PostHogProvider";
 import { extractToc } from "@/lib/blocks/validate";
 import {
   DEMO_ARTICLES,
@@ -23,6 +27,11 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  articleSchema,
+  breadcrumbSchema,
+  jsonLdString,
+} from "@/lib/seo/structured-data";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
 
@@ -105,11 +114,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // x-default always points to the English canonical (primary beachhead, section 8.2).
   const enVersion = locale === "en" ? article : alt ?? article;
 
+  const canonical = `${SITE_URL}/${locale}/article/${slug}`;
+  const ogImage = article.cover_image_url
+    ? { url: article.cover_image_url, alt: article.cover_image_alt ?? article.title, width: 1200, height: 630 }
+    : undefined;
+
   return {
     title: article.title,
     description: article.excerpt,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
-      canonical: `${SITE_URL}/${locale}/article/${slug}`,
+      canonical,
       languages: {
         [locale]: `${SITE_URL}/${locale}/article/${article.slug}`,
         ...(alt
@@ -120,12 +138,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     openGraph: {
       type: "article",
-      url: `${SITE_URL}/${locale}/article/${slug}`,
+      url: canonical,
       title: article.title,
       description: article.excerpt ?? undefined,
       locale: locale === "fr" ? "fr_FR" : "en_US",
       alternateLocale: locale === "fr" ? "en_US" : "fr_FR",
       siteName: "Forge-Blog",
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt ?? undefined,
+      ...(article.cover_image_url ? { images: [article.cover_image_url] } : {}),
+      site: "@nainoforge",
+      creator: "@nainoforge",
+    },
+    other: {
+      "article:published_time": article.published_at,
+      ...(article.updated_at ? { "article:modified_time": article.updated_at } : {}),
+      "article:author": article.author,
+      "article:section": article.pillar_slug ?? "",
     },
   };
 }
@@ -183,8 +216,50 @@ export default async function ArticlePage({ params }: Props) {
   const related = await resolveRelated(article, locale);
   const other = await resolveTranslation(article, locale === "en" ? "fr" : "en");
 
+  // Build JSON-LD scripts
+  const articleUrl = `${SITE_URL}/${locale}/article/${slug}`;
+  const heroMeta = content.sequence.find((b) => b.type === "hero_meta");
+  const ldScripts = jsonLdString([
+    articleSchema({
+      headline: article.title,
+      description: article.excerpt,
+      author: article.author,
+      datePublished: article.published_at,
+      dateModified: article.updated_at ?? undefined,
+      imageUrl: article.cover_image_url ?? undefined,
+      imageAlt: article.cover_image_alt ?? undefined,
+      url: articleUrl,
+      locale,
+      wordCount: heroMeta && "wordCount" in heroMeta ? (heroMeta as any).wordCount : undefined,
+      timeRequired: `PT${article.read_time_minutes}M`,
+    }),
+    breadcrumbSchema([
+      { name: locale === "fr" ? "Accueil" : "Home", url: `${SITE_URL}/${locale}` },
+      { name: heroMeta && "pillarName" in heroMeta ? (heroMeta as any).pillarName : "", url: `${SITE_URL}/${locale}#${article.pillar_slug}` },
+      { name: article.title, url: articleUrl },
+    ]),
+  ]);
+
   return (
     <>
+      {/* Analytics */}
+      <ScrollDepthTracker articleSlug={article.slug} />
+      <ReadCompletionTracker
+        articleSlug={article.slug}
+        articleLocale={article.locale}
+        articleTitle={article.title}
+        pillarSlug={article.pillar_slug}
+        readTimeMinutes={article.read_time_minutes}
+        endMarkerSelector="[data-article-end]"
+      />
+
+      {/* JSON-LD structured data */}
+      <div
+        dangerouslySetInnerHTML={{ __html: ldScripts }}
+        className="hidden"
+        aria-hidden
+      />
+
       {!other && (
         <div
           className="border-b border-[var(--border)] bg-[var(--surface-1)] px-4 py-2 text-sm text-[var(--text-secondary)]"
@@ -266,7 +341,10 @@ export default async function ArticlePage({ params }: Props) {
                 </aside>
               )}
 
-            <TableOfContents items={toc} label={t.toc} />
+            {/* TOC mobile: visible only on small screens */}
+            <div className="lg:hidden">
+              <TableOfContents items={toc} label={t.toc} />
+            </div>
 
             <div className="article-prose mt-2">
               {body && body.type === "body_blocks" && (
@@ -302,6 +380,9 @@ export default async function ArticlePage({ params }: Props) {
                   </Button>
                 </aside>
               )}
+
+            {/* End marker for read completion tracking */}
+            <div data-article-end aria-hidden />
 
             {related.length > 0 && (
               <section className="mt-14 space-y-4">

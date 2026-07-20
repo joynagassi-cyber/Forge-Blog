@@ -6,6 +6,10 @@
 export type Locale = "en" | "fr";
 
 export const SUPPORTED_LOCALES: readonly Locale[] = ["en", "fr"] as const;
+
+/** Future locales (Phase 9 — scaffold, not yet in SUPPORTED_LOCALES) */
+export const FUTURE_LOCALES: readonly string[] = ["de", "es", "it"] as const;
+
 export const DEFAULT_LOCALE: Locale = "en";
 export const LOCALE_COOKIE = "fb_locale";
 

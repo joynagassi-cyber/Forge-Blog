@@ -15,9 +15,14 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  websiteSchema,
+  organizationSchema,
+  jsonLdString,
+} from "@/lib/seo/structured-data";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-blog.io";
-const SITE_NAME = "NainoForge";
+const SITE_NAME = "Forge-Blog";
 const TAGLINE_EN = "Sciences de l'apprentissage · Comprendre comment le cerveau apprend, retient et connecte les idées.";
 const TAGLINE_FR = "Sciences de l'apprentissage · Comprendre comment le cerveau apprend, retient et connecte les idées.";
 
@@ -30,9 +35,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const canonical = `${SITE_URL}/${raw}`;
 
   const title = {
-    en: `${SITE_NAME} · Sciences de l'apprentissage`,
-    fr: `${SITE_NAME} · Sciences de l'apprentissage`,
+    en: `Sciences de l'apprentissage`,
+    fr: `Sciences de l'apprentissage`,
   }[raw];
+
+  const fullTitle = `${SITE_NAME} · ${title}`;
 
   const description = {
     en: TAGLINE_EN,
@@ -42,6 +49,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
       canonical,
       languages: {
@@ -53,11 +64,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       type: "website",
       url: canonical,
-      title: title ?? "",
+      title: fullTitle,
       description: description ?? "",
       locale: raw === "fr" ? "fr_FR" : "en_US",
       alternateLocale: raw === "fr" ? "en_US" : "fr_FR",
       siteName: SITE_NAME,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: fullTitle,
+      description: description ?? undefined,
+      site: "@nainoforge",
     },
   };
 }
@@ -123,8 +140,22 @@ export default async function HomePage({ params }: Props) {
 
   if (!featured) notFound();
 
+  // JSON-LD structured data
+  const canonicalUrl = `${SITE_URL}/${locale}`;
+  const ldScripts = jsonLdString([
+    organizationSchema(),
+    websiteSchema(locale),  // search action omitted — full-text search not yet implemented
+  ]);
+
   return (
     <div>
+      {/* JSON-LD structured data */}
+      <div
+        dangerouslySetInnerHTML={{ __html: ldScripts }}
+        className="hidden"
+        aria-hidden
+      />
+
       {/* Hero */}
       <section className="border-b border-[var(--border)]">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16 grid md:grid-cols-2 gap-10 items-center">
@@ -202,8 +233,7 @@ export default async function HomePage({ params }: Props) {
           type="search"
           placeholder={t.searchPlaceholder}
           className="w-full max-w-md rounded-md border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
-          disabled
-          title="Search wires to Supabase full-text search when connected"
+          title="Press Enter to search"
         />
       </section>
 
@@ -232,7 +262,7 @@ export default async function HomePage({ params }: Props) {
                   {desc}
                 </p>
               </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
                 {pillarArticles.map((a) => (
                   <ArticleCard key={a.id} article={a} locale={locale} />
                 ))}
@@ -241,15 +271,30 @@ export default async function HomePage({ params }: Props) {
           );
         })}
 
-        {/* Flat list: all articles not already shown in pillar clusters */}
+        {/* Flat list: articles not already shown in pillar clusters */}
         <div className="pt-4">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-4">
             {t.allArticles}
           </h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {articles.map((a) => (
-              <ArticleCard key={`all-${a.id}`} article={a} locale={locale} />
-            ))}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+            {(() => {
+              // Collect article IDs already shown in pillar clusters
+              const shownInPillars = new Set<string>();
+              for (const pillar of PILLARS) {
+                const pillarArticles = articles
+                  .filter((a) => a.pillar_slug === pillar.slug)
+                  .slice(0, 4);
+                for (const a of pillarArticles) {
+                  shownInPillars.add(a.id);
+                }
+              }
+              // Only show articles not already shown above
+              return articles
+                .filter((a) => !shownInPillars.has(a.id))
+                .map((a) => (
+                  <ArticleCard key={`all-${a.id}`} article={a} locale={locale} />
+                ));
+            })()}
           </div>
         </div>
       </section>

@@ -21,8 +21,15 @@ export default async function LocaleLayout({
 
   return (
     <>
+      {/* Skip-to-content link — first focusable element for keyboard users */}
+      <a
+        href="#main-content"
+        className="skip-link"
+      >
+        {locale === "fr" ? "Aller au contenu" : "Skip to content"}
+      </a>
       <SiteHeader locale={locale} />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       <footer className="border-t border-[var(--border)] mt-16">
         <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-[var(--text-muted)] flex flex-col sm:flex-row gap-2 sm:justify-between">
           <span>Forge-Blog · NainoForge & SCYForge</span>

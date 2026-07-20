@@ -24,11 +24,16 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "NainoForge",
-    template: "%s · NainoForge",
+    default: "Forge-Blog",
+    template: "%s · Forge-Blog",
   },
   description:
-    "Sciences de l'apprentissage — Comprendre comment le cerveau apprend, retient et connecte les idées.",
+    "Sciences de l'apprentissage — Articles sur la mémoire, le SOC et la cognition, par les équipes de NainoForge et SCYForge.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon.svg",
+    shortcut: "/icons/icon.svg",
+  },
 };
 
 export default async function RootLayout({
