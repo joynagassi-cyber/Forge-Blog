@@ -13,7 +13,8 @@ function isLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(value);
 }
 
-export function proxy(request: NextRequest) {
+// middleware.ts runs on Edge runtime by default (Cloudflare Workers compatible)
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip internals
