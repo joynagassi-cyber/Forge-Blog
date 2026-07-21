@@ -35,7 +35,6 @@ const copy = {
     kicker: "Featured",
     allArticlesTitle: "All articles",
     allArticlesSub: "Every article is written to be tested, not just read.",
-    seeAll: "See all articles",
     emptyTitle: "Coming soon",
     emptyBody: "The first article is being written. Check back soon for deep dives into learning, memory, and cognitive science.",
   },
@@ -48,7 +47,6 @@ const copy = {
     kicker: "À la une",
     allArticlesTitle: "Tous les articles",
     allArticlesSub: "Chaque article est écrit pour être testé, pas juste lu.",
-    seeAll: "Voir tous les articles",
     emptyTitle: "À venir",
     emptyBody: "Le premier article est en cours d'écriture. Revenez bientôt pour des explorations de l'apprentissage, de la mémoire et des sciences cognitives.",
   },
@@ -131,12 +129,12 @@ export default async function HomePage({ params }: Props) {
       />
 
       {/* ── Section 1: Hero ── */}
-      <section>
+      <section className="animate-fade-in-up">
         <div className="mx-auto max-w-3xl px-4 py-20 md:py-28 text-center">
           <p className="text-xs uppercase tracking-[0.15em] text-[var(--accent-warm)] mb-5 font-semibold">
             {t.eyebrow}
           </p>
-          <h1 className="font-serif text-3xl leading-tight md:text-[3rem] lg:text-[3.5rem] text-[var(--text-primary)] tracking-tight">
+          <h1 className="font-serif text-4xl leading-tight md:text-[3rem] lg:text-[3.5rem] text-[var(--text-primary)] tracking-tight">
             {t.headline}
           </h1>
           <p className="text-[var(--text-secondary)] text-lg md:text-xl leading-relaxed mt-5 max-w-prose mx-auto">
@@ -258,16 +256,10 @@ export default async function HomePage({ params }: Props) {
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
               {articles.map((a) => (
                 <ArticleCard key={a.id} article={a} locale={locale} />
               ))}
-            </div>
-
-            <div className="pt-2">
-              <Button variant="secondary" href={`/${locale}/articles`}>
-                {t.seeAll}
-              </Button>
             </div>
           </div>
         </section>
