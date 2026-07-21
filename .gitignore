@@ -56,6 +56,14 @@ client_secret_*.json
 # backups / temp artifacts
 *.bak
 sh.exe.stackdump
+nul
+
+# wrangler / cloudflare local state
+.wrangler/
+
+# agent workflow artifacts
+.claude/
+.claude-flow/
 all-migrations-combined.sql
 supabase/.temp/
 

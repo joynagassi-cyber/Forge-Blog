@@ -15,6 +15,12 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+// ISR — régénéré toutes les 5 min
+// generateStaticParams hérité du layout parent
+// (SUPPORTED_LOCALES = ["en", "fr"])
+export const revalidate = 300;
+
 import {
   siteGraphSchema,
   jsonLdString,

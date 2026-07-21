@@ -1,0 +1,3 @@
+/* Article-specific styles — imported only on article pages to avoid
+   blocking the main thread with code highlighting CSS on non-article pages. */
+@import "prismjs/themes/prism-tomorrow.css";

@@ -37,7 +37,7 @@ export default async function LocaleLayout({
         {locale === "fr" ? "Aller au contenu" : "Skip to content"}
       </a>
       <SiteHeader locale={locale} />
-      <main id="main-content" className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1 scroll-mt-16">{children}</main>
 
       {/* Footer */}
       <footer className="border-t border-[var(--border)] mt-16">

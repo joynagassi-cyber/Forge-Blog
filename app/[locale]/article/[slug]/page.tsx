@@ -1,3 +1,5 @@
+import "@/app/article-styles.css";
+
 import { BodyBlocks } from "@/components/public/BlockRenderer";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { TableOfContents } from "@/components/public/TableOfContents";

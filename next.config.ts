@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // --------------- Performance ---------------
+  // Enable React compiler for automatic memoization (Next.js 16)
+  experimental: {
+    reactCompiler: true,
+  },
 };
 
 export default nextConfig;
