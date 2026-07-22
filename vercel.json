@@ -1,5 +1,6 @@
 {
-  "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' pnpm build",
+  "buildCommand": "pnpm build",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . || true",
   "installCommand": "pnpm install --frozen-lockfile || pnpm install",
   "outputDirectory": ".next",
   "framework": "nextjs",
