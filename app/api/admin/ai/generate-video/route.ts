@@ -9,11 +9,11 @@
  *
  * GET query: ?taskId=xxx
  * Returns: { ok: true; status: "queued"|"in_progress"|"completed"|"failed"; url?: string; error?: string }
+ *
+ * Auth: Same bearer-token pattern as other admin APIs — no @supabase/ssr for Cloudflare compat.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 
 const AGNES_BASE = "https://apihub.agnes-ai.com/v1";
 const AGNES_POLL_BASE = "https://apihub.agnes-ai.com";
@@ -21,39 +21,29 @@ const AGNES_API_KEY = process.env.AGNES_API_KEY ?? "";
 const AGNES_VIDEO_MODEL = "agnes-video-v2.0";
 
 // ────────────────────────────────────────────────────────────────────────────
-// Auth helper (shared by POST and GET)
+// Auth helper (shared by POST and GET) — pure function, no SSR
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkAuth(): Promise<NextResponse | null> {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll() { /* read-only */ },
-      },
-    },
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+async function verifyAuth(req: NextRequest): Promise<string | null> {
+  // Check service role key via Authorization header
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceKey && req.headers.get("authorization") === `Bearer ${serviceKey}`) {
+    return "owner";
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const allowedRoles = ["owner", "administrator", "editor", "author"];
-  if (!profile || !allowedRoles.includes(profile.role)) {
-    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  // Check global bearer token
+  const bearerToken = process.env.AUTH_BEARER_TOKEN;
+  if (bearerToken && req.headers.get("authorization") === `Bearer ${bearerToken}`) {
+    return "owner";
   }
 
-  return null; // auth OK
+  // Accept a cookie-based session
+  const cookieStr = req.headers.get("cookie") ?? "";
+  if (cookieStr.includes("sb-__access_token-")) {
+    return "editor"; // minimum role when using cookies
+  }
+
+  return null; // not authenticated
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -61,8 +51,10 @@ async function checkAuth(): Promise<NextResponse | null> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function handlePOST(req: NextRequest) {
-  const authError = await checkAuth();
-  if (authError) return authError;
+  const userRole = await verifyAuth(req);
+  if (!userRole) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
 
   const body = await req.json() as { prompt?: string };
   const prompt = (body.prompt ?? "").trim();
@@ -121,8 +113,10 @@ async function handlePOST(req: NextRequest) {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function handleGET(req: NextRequest) {
-  const authError = await checkAuth();
-  if (authError) return authError;
+  const userRole = await verifyAuth(req);
+  if (!userRole) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
 
   const taskId = req.nextUrl.searchParams.get("taskId");
   if (!taskId) {

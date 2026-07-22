@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "forge-blog",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-07-14",
+  "compatibility_date": "2025-07-01",
   "compatibility_flags": [
     "nodejs_compat"
   ],
@@ -11,6 +11,13 @@
     "directory": ".open-next/assets"
   },
   "observability": {
-    "enabled": false
-  }
+    "enabled": true
+  },
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": ["**/*.png"],
+      "serialize": true
+    }
+  ]
 }

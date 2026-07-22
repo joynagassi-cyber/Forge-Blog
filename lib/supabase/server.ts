@@ -1,30 +1,17 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+/**
+ * Supabase client for Server Components and Route Handlers.
+ * Uses raw fetch-based API (no cookie management) for Cloudflare Workers compatibility.
+ */
+
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export async function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
     return null;
   }
 
-  const cookieStore = await cookies();
-
-  return createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        } catch {
-          // Called from a Server Component; middleware will refresh sessions.
-        }
-      },
-    },
-  });
+  return createSupabaseClient(SUPABASE_URL, SUPABASE_KEY);
 }

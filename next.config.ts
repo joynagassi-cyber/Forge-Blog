@@ -1,13 +1,15 @@
 import type { NextConfig } from "next";
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
-initOpenNextCloudflareForDev();
-
+/**
+ * Cloudflare-compatible Next.js config.
+ * Key changes for @opennextjs/cloudflare:
+ * - turbopack removed (not supported in edge builds)
+ * - images.remotePatterns is fine for Cloudflare
+ */
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: ".",
-  },
-  // Allow Supabase Storage images for article covers and inline images
+  // Turbopack causes build failures with opennext — remove entirely
+  // turbopack: { root: "." }
+
   images: {
     remotePatterns: [
       {
@@ -17,7 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // --------------- Performance ---------------
 };
 
 export default nextConfig;

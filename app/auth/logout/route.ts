@@ -1,37 +1,18 @@
 /**
- * Logout route — signs out the current user and redirects to the public site.
- *
- * GET /auth/logout
+ * Logout route — clears the Supabase session cookie and redirects to the public site.
+ * Pure cookie manipulation — no @supabase/ssr dependency for Cloudflare compatibility.
  */
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Called from a Server Component; middleware will refresh sessions
-          }
-        },
-      },
-    }
+  const response = NextResponse.redirect(
+    new URL("/en", process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000")
   );
 
-  await supabase.auth.signOut();
+  // Clear Supabase auth cookies
+  response.cookies.set("sb-__access_token-", "", { maxAge: 0, path: "/" });
+  response.cookies.set("sb-__refresh_token-", "", { maxAge: 0, path: "/" });
+  response.cookies.set("sb-__token-", "", { maxAge: 0, path: "/" });
 
-  return NextResponse.redirect(new URL("/en", process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"));
+  return response;
 }

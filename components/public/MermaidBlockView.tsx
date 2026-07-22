@@ -1,56 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import mermaid from "mermaid";
 
-// ---------------------------------------------------------------------------
-// Singleton guard — mermaid.initialize is called only once
-// ---------------------------------------------------------------------------
-let initialized = false;
-
-function ensureMermaidInitialized() {
-  if (initialized) return;
-  initialized = true;
-
-  const isDark =
-    typeof document !== "undefined" &&
-    (document.documentElement.dataset.theme === "dark" ||
-      (!document.documentElement.dataset.theme &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches));
-
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: "base",
-    themeVariables: {
-      background: "transparent",
-      primaryColor: isDark ? "#18181b" : "#f4f4f5",
-      primaryTextColor: isDark ? "#f2f2f3" : "#111114",
-      primaryBorderColor: isDark ? "#3f3f46" : "#d4d4d8",
-      secondaryColor: isDark ? "#1f1f23" : "#ececee",
-      secondaryTextColor: isDark ? "#9a9aa1" : "#5b5b63",
-      secondaryBorderColor: isDark ? "#27272a" : "#e4e4e7",
-      tertiaryColor: isDark ? "#0a0a0c" : "#fafafa",
-      tertiaryTextColor: isDark ? "#71717a" : "#8b8b93",
-      lineColor: isDark ? "#3f3f46" : "#d4d4d8",
-      fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-      fontSize: "14px",
-      edgeLabelBackground: isDark ? "#18181b" : "#f4f4f5",
-    },
-    flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" },
-    sequence: { showSequenceNumbers: false },
-  });
+// Dynamic import — mermaid (~3MB) loaded at runtime, never bundled in server handler
+async function loadMermaidModule(): Promise<typeof import("mermaid").default> {
+  const mod = await import("mermaid");
+  return (mod.default || mod) as typeof import("mermaid").default;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-type Props = {
-  definition: string;
-  title?: string;
-};
-
-export function MermaidBlockView({ definition, title }: Props) {
+export function MermaidBlockView({ definition, title }: { definition: string; title?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -60,12 +18,36 @@ export function MermaidBlockView({ definition, title }: Props) {
     if (!containerRef.current || !definition.trim()) return;
     let cancelled = false;
 
-    ensureMermaidInitialized();
-
-    async function render() {
-      setLoading(true);
-      setError(false);
+    async function initAndRender() {
       try {
+        const mermaid = await loadMermaidModule();
+
+        // Singleton init — first call wins
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "base",
+          themeVariables: {
+            background: "transparent",
+            primaryColor: "#f4f4f5",
+            primaryTextColor: "#111114",
+            primaryBorderColor: "#d4d4d8",
+            secondaryColor: "#ececee",
+            secondaryTextColor: "#5b5b63",
+            secondaryBorderColor: "#e4e4e7",
+            tertiaryColor: "#fafafa",
+            tertiaryTextColor: "#8b8b93",
+            lineColor: "#d4d4d8",
+            fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+            fontSize: "14px",
+            edgeLabelBackground: "#f4f4f5",
+          },
+          flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" },
+        });
+
+        if (cancelled) return;
+        setLoading(true);
+        setError(false);
+
         const existing = containerRef.current?.querySelector(".mermaid");
         if (existing) existing.remove();
 
@@ -85,7 +67,7 @@ export function MermaidBlockView({ definition, title }: Props) {
       }
     }
 
-    void render();
+    void initAndRender();
     return () => { cancelled = true; };
   }, [definition]);
 

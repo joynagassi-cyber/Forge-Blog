@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 /**
  * Server-side auth guard for the admin area.
- * Reads the Supabase session from cookies on the server (section 11, 14.5).
+ * Reads the Supabase session from raw cookies (Cloudflare Workers compatible).
  * Redirects to /auth/login with ?redirect=/admin if no session.
  */
 export default async function AdminAuthGate({
@@ -11,18 +11,30 @@ export default async function AdminAuthGate({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  // Read cookie header directly — works on any runtime including Edge
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll?.() ?? [];
 
-  // No Supabase configured → demo mode (show without auth)
+  // Look for Supabase access token in cookies
+  const accessToken = allCookies.find(
+    (c) => c.name.includes("sb-__access_token")
+  )?.value;
+
+  if (!accessToken) {
+    redirect("/auth/login?redirect=/admin");
+  }
+
+  // Try to verify the token via Supabase API
+  const supabase = await createClient();
   if (!supabase) {
     return <>{children}</>;
   }
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Use the access token to verify session
+  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
 
-  if (!session) {
+  if (error || !user) {
     redirect("/auth/login?redirect=/admin");
   }
 

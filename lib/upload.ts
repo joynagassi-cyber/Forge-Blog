@@ -9,7 +9,7 @@
  * or cover_image_url field.
  */
 
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 export type UploadResult =
   | { ok: true; url: string; alt: string }
@@ -69,7 +69,7 @@ export async function uploadImage(
 
   if (supabaseUrl && supabaseKey) {
     try {
-      const supabase = createBrowserClient(supabaseUrl, supabaseKey);
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
       const fileName = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}${getExtension(processedFile)}`;
       const filePath = `${prefix}${fileName}`;
