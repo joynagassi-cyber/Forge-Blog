@@ -5,19 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "cf:build": "opennextjs-cloudflare build",
     "start": "next start",
-    "preview": "opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "deploy:prod": "opennextjs-cloudflare build && opennextjs-cloudflare deploy --minify",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:all": "vitest run && playwright test",
-    "icons": "node scripts/generate-pwa-icons.mjs",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "test:all": "vitest run && playwright test"
   },
   "dependencies": {
     "@blocknote/core": "^0.51.4",
@@ -35,7 +29,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/katex": "^0.16.8",

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: forge-blog
+    env: node
+    plan: free
+    buildCommand: pnpm install --frozen-lockfile && NODE_OPTIONS='--max-old-space-size=4096' next build
+    startCommand: pnpm start
+    healthCheckPath: /en
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://dojbyxyhcsvasfbaqved.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        generateValue: true
+      - key: NODE_ENV
+        value: production
