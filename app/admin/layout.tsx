@@ -5,6 +5,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("admin_session")?.value;
 
+  // Allow access to /admin/login without session
   if (!sessionToken) {
     redirect("/admin/login");
   }
