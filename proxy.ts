@@ -13,8 +13,11 @@ function isLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(value);
 }
 
-// middleware.ts runs on Edge runtime by default (Cloudflare Workers compatible)
-export function middleware(request: NextRequest) {
+/**
+ * Next.js 16 proxy — replaces middleware.ts.
+ * Handles locale prefix routing for public pages.
+ */
+export function request(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip internals
@@ -47,7 +50,6 @@ export function middleware(request: NextRequest) {
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
   const acceptLanguage = request.headers.get("accept-language");
   const geoCountry =
-    request.headers.get("x-vercel-ip-country") ??
     request.headers.get("cf-ipcountry");
 
   const { locale } = resolveLocale({
