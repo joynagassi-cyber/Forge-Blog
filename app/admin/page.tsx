@@ -50,12 +50,28 @@ export default async function AdminOverviewPage() {
             )}
           </p>
         </div>
-        <Link
-          href="/admin/articles/new"
-          className="inline-flex items-center rounded-md bg-[var(--accent)] text-white font-semibold px-4 py-2.5 text-sm btn-shimmer"
-        >
-          Create article
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/articles/new"
+            className="inline-flex items-center rounded-md bg-[var(--accent)] text-white font-semibold px-4 py-2.5 text-sm btn-shimmer"
+          >
+            Create article
+          </Link>
+          <Link
+            href="/fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)] font-semibold px-4 py-2.5 text-sm hover:bg-[var(--surface-2)] transition-colors"
+            title="Open blog in new tab"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            Voir le blog
+          </Link>
+        </div>
       </div>
 
       {/* KPI cards */}
