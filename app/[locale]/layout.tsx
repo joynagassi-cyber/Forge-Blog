@@ -104,11 +104,20 @@ export default async function LocaleLayout({
           {/* Bottom bar */}
           <div className="mt-10 pt-6 border-t border-[var(--border)] flex flex-col sm:flex-row gap-2 sm:justify-between text-xs text-[var(--text-muted)]">
             <span>Forge-Blog &middot; 2026</span>
-            <span>
-              {locale === "fr"
-                ? "Écrit par les équipes Forge."
-                : "Written by the Forge team."}
-            </span>
+            <div className="flex gap-4 items-center">
+              <span>
+                {locale === "fr"
+                  ? "Écrit par les équipes Forge."
+                  : "Written by the Forge team."}
+              </span>
+              {/* Lien discret vers l'éditeur — visible mais non intrusif */}
+              <Link
+                href="/admin"
+                className="opacity-30 hover:opacity-80 transition-opacity"
+              >
+                Éditeur
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
