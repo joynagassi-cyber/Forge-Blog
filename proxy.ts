@@ -17,7 +17,7 @@ function isLocale(value: string): value is Locale {
  * Next.js 16 proxy — replaces middleware.ts.
  * Handles locale prefix routing for public pages.
  */
-export function request(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip internals
