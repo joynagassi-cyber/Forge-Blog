@@ -17,9 +17,9 @@ export default async function AdminAuthGate({
   }
 
   // Verify session via API
-  const { data: { user }, error } = await supabase.auth.getSession();
+  const { data, error } = await supabase.auth.getSession();
 
-  if (error || !user) {
+  if (error || !data?.session) {
     redirect("/auth/login?redirect=/admin");
   }
 
