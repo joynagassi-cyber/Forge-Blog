@@ -1,3 +1,7 @@
+/**
+ * Admin login page — simple password authentication form.
+ * No parent layout auth check applies here (empty layout).
+ */
 "use client";
 
 import { useState } from "react";
@@ -29,10 +33,9 @@ export default function AdminLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-
       const data = await res.json();
       if (data.ok) {
-        router.push("/admin");
+        window.location.href = "/admin";
       } else {
         setError(data.error || "Erreur.");
       }
@@ -68,7 +71,6 @@ export default function AdminLoginPage() {
               className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent outline-none"
             />
           </div>
-
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Confirmer le mot de passe</label>
             <input
