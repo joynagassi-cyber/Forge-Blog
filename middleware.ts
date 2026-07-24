@@ -12,20 +12,29 @@ function isLocale(value: string): value is Locale {
 }
 
 /**
- * Locale routing middleware.
- * Handles prefixing locale (/en, /fr) for public pages.
- *
- * IMPORTANT: auth/* and admin/* routes are NEVER locale-prefixed.
- * They live at the root level (app/auth/, app/admin/).
+ * Single middleware — handles BOTH locale routing AND admin auth.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip ALL non-public routes — these are NOT locale-prefixed
+  // ── ADMIN AUTH ──────────────────────────────────────────────
+  if (pathname.startsWith("/admin")) {
+    // Allow /admin/login without session check
+    if (pathname === "/admin/login" || pathname.startsWith("/admin/login?")) {
+      return NextResponse.next();
+    }
+    // Check session cookie for all other /admin/* routes
+    const sessionToken = request.cookies.get("admin_session")?.value;
+    if (!sessionToken) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // Skip API, auth, static files — NO locale prefix
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
-    pathname.startsWith("/admin") ||
     pathname.startsWith("/auth") ||
     pathname === "/favicon.ico"
   ) {
@@ -34,30 +43,10 @@ export function middleware(request: NextRequest) {
 
   const segments = pathname.split("/").filter(Boolean);
 
-  // If already prefixed, just refresh cookie — do NOT double-prefix
+  // Already locale-prefixed — just refresh cookie
   if (segments.length > 0 && isLocale(segments[0])) {
-    return NextResponse.next();
-  }
-
-  // Resolve locale to redirect to
-  const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
-  const acceptLanguage = request.headers.get("accept-language");
-  const geoCountry = request.headers.get("cf-ipcountry");
-
-  const { locale } = resolveLocale({
-    explicitChoice: cookieLocale,
-    urlLocale: null,
-    acceptLanguage,
-    geoCountry,
-  });
-
-  // Only redirect root path to locale — skip everything else to avoid double-prefix
-  if (pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = `/${locale}`;
-
-    const response = NextResponse.redirect(url);
-    response.cookies.set(LOCALE_COOKIE, locale, {
+    const response = NextResponse.next();
+    response.cookies.set(LOCALE_COOKIE, segments[0], {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
       sameSite: "lax",
@@ -65,21 +54,24 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // Not root and not prefixed — this shouldn't normally happen
-  // but handle it gracefully: treat as if user hit a non-locale route
-  // Actually we should redirect to locale-prefixed version
-  const url = request.nextUrl.clone();
-  url.pathname = `/${locale}${pathname}`;
+  // Root path → redirect to default locale
+  if (pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${DEFAULT_LOCALE}`;
+    const response = NextResponse.redirect(url);
+    response.cookies.set(LOCALE_COOKIE, DEFAULT_LOCALE, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+    return response;
+  }
 
-  const response = NextResponse.redirect(url);
-  response.cookies.set(LOCALE_COOKIE, locale, {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: "lax",
-  });
-  return response;
+  // Other non-locale paths → no redirect, let it pass through
+  // (e.g., /robots.txt, /sitemap.xml, etc.)
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
