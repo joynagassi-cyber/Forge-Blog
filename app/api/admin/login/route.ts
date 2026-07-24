@@ -10,39 +10,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Mot de passe requis" }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
 
-    // Query all credentials (no eq filter to avoid PostgREST encoding issues)
+    // Debug: log what we have (not the key itself!)
+    console.log("[login] SUPABASE_URL:", supabaseUrl ? `Set (${supabaseUrl.substring(0, 20)}...)` : "NOT SET");
+    console.log("[login] SERVICE_ROLE_KEY:", supabaseKey ? `Set (${supabaseKey.substring(0, 10)}...)` : "NOT SET");
+    console.log("[login] ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set" : "NOT SET");
+
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { ok: false, error: `Config missing: URL=${!!supabaseUrl}, KEY=${!!supabaseKey}` },
+        { status: 500 },
+      );
+    }
+
+    console.log("[login] Fetching from Supabase...");
+
     const res = await fetch(`${supabaseUrl}/rest/v1/admin_credentials`, {
       headers: {
         "apikey": supabaseKey,
         "Authorization": `Bearer ${supabaseKey}`,
-        "Prefer": "return=minimal",
       },
     });
 
+    console.log("[login] Supabase response:", res.status);
+
     if (!res.ok) {
-      console.error("[api/admin/login] Table query failed:", await res.text());
-      return NextResponse.json({ ok: false, error: "Service indisponible" }, { status: 503 });
+      const errText = await res.text();
+      return NextResponse.json({ ok: false, error: `Supabase error ${res.status}: ${errText.slice(0, 300)}` }, { status: 503 });
     }
 
-    // Get the stored password from the row
-    const { data } = await res.json() as { data: Array<{ password: string }> | null };
+    const text = await res.text();
+    console.log("[login] Supabase data:", text);
 
-    if (!data || data.length === 0) {
-      return NextResponse.json({ ok: false, error: "Admin n'est pas configuré. Appelez d'abord /api/admin/setup." }, { status: 503 });
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return NextResponse.json({ ok: false, error: `Invalid response from Supabase: ${text.slice(0, 100)}` }, { status: 500 });
     }
 
-    // Compare passwords
-    const storedPassword = data[0].password;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return NextResponse.json(
+        { ok: false, error: "Admin pas configuré. Appelez d'abord /admin/setup." },
+        { status: 503 },
+      );
+    }
+
+    const storedPassword = parsed[0].password;
     if (!storedPassword || storedPassword !== body.password) {
       return NextResponse.json({ ok: false, error: "Mot de passe incorrect" }, { status: 401 });
     }
 
-    // Generate session token
     const sessionToken = crypto.randomUUID();
-    const expiresIn = 60 * 60 * 24 * 7; // 7 jours
+    const expiresIn = 60 * 60 * 24 * 7;
 
     const response = NextResponse.json({ ok: true, session_token: sessionToken });
     response.cookies.set("admin_session", sessionToken, {
@@ -52,9 +74,10 @@ export async function POST(req: NextRequest) {
       maxAge: expiresIn,
       path: "/",
     });
+    console.log("[login] Session created for password match");
     return response;
   } catch (err) {
-    console.error("[api/admin/login] Error:", err);
-    return NextResponse.json({ ok: false, error: "Erreur serveur" }, { status: 500 });
+    console.error("[login] Unexpected error:", err);
+    return NextResponse.json({ ok: false, error: `Unexpected: ${(err as Error).message}` }, { status: 500 });
   }
 }
