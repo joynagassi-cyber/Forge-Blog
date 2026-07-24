@@ -19,8 +19,13 @@ export function middleware(request: NextRequest) {
 
   // ── ADMIN AUTH ──────────────────────────────────────────────
   if (pathname.startsWith("/admin")) {
-    // Allow /admin/login without session check
-    if (pathname === "/admin/login" || pathname.startsWith("/admin/login?")) {
+    // Allow both /admin/login and /admin/setup without session check
+    if (
+      pathname === "/admin/login" ||
+      pathname.startsWith("/admin/login?") ||
+      pathname === "/admin/setup" ||
+      pathname.startsWith("/api/admin/")
+    ) {
       return NextResponse.next();
     }
     // Check session cookie for all other /admin/* routes
