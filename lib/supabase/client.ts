@@ -1,33 +1,37 @@
 /**
- * Supabase browser client — used in client-side components only.
- * For server-side, use lib/supabase/server.ts instead.
- *
- * NOTE: This is kept for backwards compatibility. In production on Cloudflare,
- * auth state comes from cookies set by /auth/callback.
+ * Supabase browser client for OAuth login (client-side only).
+ * Uses Next.js NEXT_PUBLIC_ env vars — properly injected at build time.
  */
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _supabase: any | null = null;
 
 export function createClient() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
+  if (_supabase) return _supabase;
+
+  // Use __NEXT_PUBLIC__ prefixed vars — these are server-exposed at compile time
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+
+  if (!url || !key) {
+    console.error("[Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or ANON_KEY");
     return null;
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = (window as any).__supabase_client as any | undefined;
-  if (supabase) return supabase;
 
   try {
-    // Dynamic import to avoid bundling SSR-related code
-    // In practice this only runs in the browser
-    const mod = require("@supabase/supabase-js");
-    const client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__supabase_client = client;
-    return client;
+    // Dynamic import to avoid SSR bundling issues
+    const { createBrowserClient } = require("@supabase/ssr");
+    _supabase = createBrowserClient(url, key, {
+      cookies: {
+        getAll() { return []; },
+        setAll() {},
+      },
+    });
   } catch {
-    // If module resolution fails (e.g., during build), return null
-    return null;
+    // Fallback: raw client
+    const { createClient: rawCreate } = require("@supabase/supabase-js");
+    _supabase = rawCreate(url, key);
   }
+
+  return _supabase;
 }
