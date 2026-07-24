@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
 
   console.log("[setup] SUPABASE_URL:", supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : "NOT SET");
   console.log("[setup] SUPABASE_KEY:", supabaseKey ? `${supabaseKey.substring(0, 10)}...` : "NOT SET");
