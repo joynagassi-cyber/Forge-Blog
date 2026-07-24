@@ -1,143 +1,128 @@
+/**
+ * Admin overview page — main dashboard.
+ */
+import Link from "next/link";
+import { ContentHealthDashboard } from "@/components/admin/ContentHealthDashboard";
 import {
   getAdminArticles,
   getAllArticleScores,
 } from "@/lib/supabase/queries";
-import Link from "next/link";
-import { ContentHealthDashboard } from "@/components/admin/ContentHealthDashboard";
 
-const statuses = [
-  { key: "published", label: "Published", className: "status-published" },
-  { key: "drafting", label: "Drafting", className: "status-attention" },
-  { key: "in_review", label: "In review", className: "status-info" },
-  { key: "idea", label: "Ideas", className: "status-info" },
-];
+type ArticleRow = Awaited<ReturnType<typeof getAdminArticles>>[number];
 
 export default async function AdminOverviewPage() {
-  // Supabase data (best-effort)
-  const liveRows = await getAdminArticles();
-  const useLive = liveRows !== null && liveRows.length > 0;
+  const rows = await getAdminArticles();
+  const useLive = rows !== null && rows.length > 0;
 
-  // Article scores from DB (if available)
-  const liveScoreMap = useLive ? await getAllArticleScores() : null;
-
-  // Normalize articles for the health dashboard
-  const articles = useLive
-    ? liveRows!.map((r) => ({
-        id: r.id,
-        title: r.title ?? r.working_title,
-        locale: r.locale,
-        status: r.status,
-        content: r.content,
-        pillar_slug: r.pillar_slug ?? "",
-        published_at: r.published_at,
-      }))
-    : [];
-
-  const total = articles.length;
-  const published = articles.filter((a) => a.status === "published").length;
+  const allScores = useLive ? await getAllArticleScores() : null;
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      <div className="flex items-start justify-between gap-4">
+    <div className="p-6 max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
-            Overview
-          </h1>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Tableau de bord</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
-            What changed · What needs attention · What is performing · What should happen next
-            {!useLive && (
-              <span className="ml-2 status-attention">· No articles yet — connect Supabase</span>
-            )}
+            Aperçu · Articles · Rédaction · Scores
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/articles/new"
-            className="inline-flex items-center rounded-md bg-[var(--accent)] text-white font-semibold px-4 py-2.5 text-sm btn-shimmer"
-          >
-            Create article
-          </Link>
-          <Link
-            href="/fr"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)] font-semibold px-4 py-2.5 text-sm hover:bg-[var(--surface-2)] transition-colors"
-            title="Open blog in new tab"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-            Voir le blog
-          </Link>
-        </div>
+        <Link
+          href="/admin/articles/new"
+          className="inline-flex items-center rounded-md bg-[var(--accent)] text-white font-semibold px-4 py-2.5 text-sm hover:bg-[var(--accent)]/90 transition-colors"
+        >
+          + Nouvel article
+        </Link>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total articles", value: total },
-          { label: "Published", value: published },
-          {
-            label: "Complete translations",
-            value: 0,
-          },
-          {
-            label: "Missing translations",
-            value: 0,
-          },
+          { label: "Total articles", value: useLive ? rows!.length : 0 },
+          { label: "Publiés", value: useLive ? rows!.filter(r => r.status === "published").length : 0 },
+          { label: "En révision", value: useLive ? rows!.filter(r => r.status === "in_review").length : 0 },
+          { label: "Brouillons", value: useLive ? rows!.filter(r => r.status === "drafting").length : 0 },
         ].map((card) => (
           <div
             key={card.label}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-4"
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-5"
           >
-            <div className="text-2xl font-semibold tabular-nums">
+            <div className="text-3xl font-bold text-[var(--text-primary)] tabular-nums">
               {card.value}
             </div>
-            <div className="text-sm text-[var(--text-secondary)] mt-1">
-              {card.label}
-            </div>
+            <div className="text-sm text-[var(--text-muted)] mt-1">{card.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Status distribution + action queue */}
-      <section className="grid md:grid-cols-2 gap-6">
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5">
-          <h2 className="font-semibold mb-3">Status distribution</h2>
-          <ul className="space-y-2 text-sm">
-            {statuses.map((s) => (
-              <li key={s.key} className="flex justify-between">
-                <span className={s.className}>{s.label}</span>
-                <span className="text-[var(--text-muted)] tabular-nums">
-                  {articles.filter((a) => a.status === s.key).length}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Action buttons */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Link
+          href="/admin/articles"
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-4 text-center hover:border-[var(--accent)] transition-colors"
+        >
+          <div className="text-sm font-medium text-[var(--text-primary)]">Tous les articles</div>
+        </Link>
+        <Link
+          href="/admin/articles/calendar"
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-4 text-center hover:border-[var(--accent)] transition-colors"
+        >
+          <div className="text-sm font-medium text-[var(--text-primary)]">Calendrier</div>
+        </Link>
+        <Link
+          href="/admin/reviews"
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-4 text-center hover:border-[var(--accent)] transition-colors"
+        >
+          <div className="text-sm font-medium text-[var(--text-primary)]">Reviews</div>
+        </Link>
+        <Link
+          href="/admin/analytics"
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-4 text-center hover:border-[var(--accent)] transition-colors"
+        >
+          <div className="text-sm font-medium text-[var(--text-primary)]">Analytics</div>
+        </Link>
+        <Link
+          href="/admin/settings/ai"
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-4 text-center hover:border-[var(--accent)] transition-colors"
+        >
+          <div className="text-sm font-medium text-[var(--text-primary)]">IA Providers</div>
+        </Link>
+        <a
+          href="/fr"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-4 text-center hover:border-[var(--accent)] transition-colors"
+        >
+          <div className="text-sm font-medium text-[var(--text-primary)]">Voir le blog ↗</div>
+        </a>
+      </div>
 
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5">
-          <h2 className="font-semibold mb-3">Prioritized action queue</h2>
-          <ol className="list-decimal pl-5 space-y-2 text-sm text-[var(--text-secondary)]">
-            <li>Connect Supabase (URL + anon key in .env.local)</li>
-            <li>Run migrations in supabase/migrations</li>
-            <li>Configure AI providers under Settings</li>
-            <li>Write your first article and publish it</li>
-          </ol>
-        </div>
-      </section>
+      {/* Health Dashboard */}
+      {useLive && (
+        <section>
+          <h2 className="font-semibold text-lg mb-4">Santé du contenu &amp; Scores SEO/AEO/GEO</h2>
+          <ContentHealthDashboard
+            articles={rows!.map((r) => ({
+              id: r.id,
+              title: r.title ?? r.working_title,
+              locale: r.locale,
+              status: r.status,
+              content: r.content,
+              pillar_slug: r.pillar_slug ?? "",
+              published_at: r.published_at,
+            }))}
+            liveScores={allScores}
+            isLive={true}
+          />
+        </section>
+      )}
 
-      {/* Content Health Dashboard */}
-      <section className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] p-5">
-        <h2 className="font-semibold mb-4">Content health &amp; SEO/AEO/GEO scores</h2>
-        <ContentHealthDashboard
-          articles={articles}
-          liveScores={liveScoreMap}
-          isLive={useLive}
-        />
-      </section>
+      {!useLive && (
+        <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
+          <p className="text-sm text-[var(--text-muted)]">
+            Aucune donnée dans Supabase. Connecte d'abord ta base de données.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
